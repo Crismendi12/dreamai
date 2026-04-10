@@ -2,21 +2,18 @@
 
 import { useState, useRef, useCallback } from "react";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 interface VoiceRecorderProps {
   onTranscriptReady: (transcript: string) => void;
 }
 
 export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps) {
-  const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [liveText, setLiveText] = useState("");
-  const [mode, setMode] = useState<"idle" | "recording" | "review">("idle");
+  const [mode, setMode] = useState<"idle" | "recording" | "transcribing" | "review">("idle");
   const [micError, setMicError] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const recognitionRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startRecording = useCallback(async () => {
     try {
@@ -30,39 +27,11 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
       };
 
       mediaRecorder.start(1000);
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => {
+        setRecordingTime((t) => t + 1);
+      }, 1000);
 
-      // Try Web Speech API for live transcription
-      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognitionAPI) {
-        const recognition = new SpeechRecognitionAPI();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "en-US";
-        let finalText = "";
-
-        recognition.onresult = (event: any) => {
-          let interim = "";
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const result = event.results[i];
-            if (result.isFinal) {
-              finalText += result[0].transcript + " ";
-            } else {
-              interim += result[0].transcript;
-            }
-          }
-          setLiveText(finalText + interim);
-          setTranscript(finalText);
-        };
-
-        recognition.onerror = () => {
-          // Speech recognition failed, user can still type
-        };
-
-        recognition.start();
-        recognitionRef.current = recognition;
-      }
-
-      setIsRecording(true);
       setMode("recording");
     } catch {
       setMicError(true);
@@ -70,15 +39,53 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
     }
   }, []);
 
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
+  const stopRecording = useCallback(async () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
+
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive") {
+      setMode("review");
+      return;
     }
-    setIsRecording(false);
+
+    // Wait for the recorder to finish writing chunks
+    const recorder = mediaRecorderRef.current;
+    await new Promise<void>((resolve) => {
+      recorder.onstop = () => resolve();
+      recorder.stop();
+    });
+    recorder.stream.getTracks().forEach((t) => t.stop());
+
+    // Build audio blob and send to Whisper for transcription
+    const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+
+    if (audioBlob.size < 1000) {
+      // Too short, go to typing
+      setMode("review");
+      return;
+    }
+
+    setMode("transcribing");
+
+    try {
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "recording.webm");
+
+      const res = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.text && data.text.trim().length > 0) {
+        setTranscript(data.text.trim());
+      }
+    } catch {
+      // Transcription failed, user can type
+    }
+
     setMode("review");
   }, []);
 
@@ -86,6 +93,12 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
     if (transcript.trim().length > 10) {
       onTranscriptReady(transcript.trim());
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
   if (mode === "idle") {
@@ -129,30 +142,37 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
       <div className="flex flex-col items-center gap-8 animate-fade-in">
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
-            Listening...
+            Recording...
           </h2>
           <p className="text-[var(--text-secondary)]">
             Speak about your dream. Press stop when you're done.
           </p>
         </div>
 
-        <button
-          onClick={stopRecording}
-          className="relative w-28 h-28 rounded-full bg-[var(--danger)] flex items-center justify-center cursor-pointer"
-        >
-          <div className="absolute inset-0 rounded-full bg-[var(--danger)] recording-pulse" />
-          <svg className="w-8 h-8 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
-            <rect x="6" y="6" width="12" height="12" rx="2" />
-          </svg>
-        </button>
+        <div className="flex flex-col items-center gap-4">
+          <button
+            onClick={stopRecording}
+            className="relative w-28 h-28 rounded-full bg-[var(--danger)] flex items-center justify-center cursor-pointer"
+          >
+            <div className="absolute inset-0 rounded-full bg-[var(--danger)] recording-pulse" />
+            <svg className="w-8 h-8 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          </button>
+          <span className="text-lg font-mono text-[var(--text-secondary)]">
+            {formatTime(recordingTime)}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
-        {liveText && (
-          <div className="glass rounded-xl p-4 max-w-lg w-full max-h-48 overflow-y-auto">
-            <p className="text-sm text-[var(--text-secondary)] italic leading-relaxed">
-              {liveText}
-            </p>
-          </div>
-        )}
+  if (mode === "transcribing") {
+    return (
+      <div className="flex flex-col items-center gap-4 animate-fade-in">
+        <div className="w-10 h-10 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+        <p className="text-[var(--text-secondary)]">Transcribing your recording...</p>
+        <p className="text-xs text-[var(--text-muted)]">Using AI to convert speech to text</p>
       </div>
     );
   }
@@ -184,7 +204,7 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
 
       <div className="flex gap-3">
         <button
-          onClick={() => { setMode("idle"); setTranscript(""); setLiveText(""); setMicError(false); }}
+          onClick={() => { setMode("idle"); setTranscript(""); setRecordingTime(0); setMicError(false); }}
           className="flex-1 py-3 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] transition-colors text-sm cursor-pointer"
         >
           {micError ? "Try Mic Again" : "Re-record"}
