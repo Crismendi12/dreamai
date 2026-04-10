@@ -1,6 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic();
+import { callClaude } from "@/lib/claude";
 
 export async function POST(request: Request) {
   const { transcript } = await request.json();
@@ -12,10 +10,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 2000,
-    system: `You are an AI dream analyst trained in Image Rehearsal Therapy (IRT) protocols. Your role is to analyze a dream narrative and extract structured data for a therapeutic dream diary.
+  try {
+    const text = await callClaude(
+      `You are an AI dream analyst trained in Image Rehearsal Therapy (IRT) protocols. Your role is to analyze a dream narrative and extract structured data for a therapeutic dream diary.
 
 You must extract:
 1. **setting**: Where did the dream take place? (location, time of day, indoor/outdoor)
@@ -50,21 +47,20 @@ Example format:
   "waking_life_links": "Possible connection to high-stress work environment",
   "turning_point": "The moment the unknown figure turned around and had no face"
 }`,
-    messages: [
-      {
-        role: "user",
-        content: `Here is the dream narrative recorded by the patient:\n\n"${transcript}"`,
-      },
-    ],
-  });
+      `Here is the dream narrative recorded by the patient:\n\n"${transcript}"`,
+      2000
+    );
 
-  const text =
-    message.content[0].type === "text" ? message.content[0].text : "";
-
-  try {
-    const analysis = JSON.parse(text);
-    return Response.json({ analysis });
-  } catch {
-    return Response.json({ analysis: text });
+    try {
+      const analysis = JSON.parse(text);
+      return Response.json({ analysis });
+    } catch {
+      return Response.json({ analysis: text });
+    }
+  } catch (err) {
+    return Response.json(
+      { error: (err as Error).message || "AI service unavailable" },
+      { status: 503 }
+    );
   }
 }

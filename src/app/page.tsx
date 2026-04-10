@@ -13,10 +13,12 @@ export default function Home() {
   const [transcript, setTranscript] = useState("");
   const [analysis, setAnalysis] = useState<Record<string, unknown> | null>(null);
   const [followUpAnswers, setFollowUpAnswers] = useState<{ q: string; a: string }[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const handleTranscript = async (text: string) => {
     setTranscript(text);
     setStep("analyzing");
+    setError(null);
 
     try {
       const res = await fetch("/api/analyze", {
@@ -25,9 +27,15 @@ export default function Home() {
         body: JSON.stringify({ transcript: text }),
       });
       const data = await res.json();
+      if (data.error) {
+        setError(data.error);
+        setStep("record");
+        return;
+      }
       setAnalysis(data.analysis);
       setStep("diary");
     } catch {
+      setError("Connection error. Please try again.");
       setStep("record");
     }
   };
@@ -86,6 +94,11 @@ export default function Home() {
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         {step === "landing" && <LandingView onStart={() => setStep("record")} />}
+        {error && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-[var(--danger)]/10 border border-[var(--danger)]/20 text-[var(--danger)] text-sm text-center max-w-lg animate-fade-in">
+            {error}
+          </div>
+        )}
         {step === "record" && <VoiceRecorder onTranscriptReady={handleTranscript} />}
         {step === "analyzing" && (
           <div className="flex flex-col items-center gap-4 animate-fade-in">
