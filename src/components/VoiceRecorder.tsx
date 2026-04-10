@@ -13,6 +13,7 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
   const [transcript, setTranscript] = useState("");
   const [liveText, setLiveText] = useState("");
   const [mode, setMode] = useState<"idle" | "recording" | "review">("idle");
+  const [micError, setMicError] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
@@ -64,7 +65,7 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
       setIsRecording(true);
       setMode("recording");
     } catch {
-      // Microphone not available, switch to text mode
+      setMicError(true);
       setMode("review");
     }
   }, []);
@@ -161,12 +162,18 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
     <div className="flex flex-col gap-6 w-full max-w-lg animate-fade-in">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
-          Your Dream Narrative
+          {transcript ? "Your Dream Narrative" : "Type Your Dream"}
         </h2>
         <p className="text-[var(--text-secondary)] text-sm">
-          Review and edit if needed, then submit for analysis.
+          {transcript ? "Review and edit if needed, then submit for analysis." : "Describe your dream in as much detail as you can."}
         </p>
       </div>
+
+      {micError && (
+        <div className="px-4 py-3 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)] text-sm text-center animate-fade-in">
+          Microphone not available. You can type your dream instead.
+        </div>
+      )}
 
       <textarea
         value={transcript}
@@ -177,10 +184,10 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
 
       <div className="flex gap-3">
         <button
-          onClick={() => { setMode("idle"); setTranscript(""); setLiveText(""); }}
+          onClick={() => { setMode("idle"); setTranscript(""); setLiveText(""); setMicError(false); }}
           className="flex-1 py-3 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] transition-colors text-sm cursor-pointer"
         >
-          Re-record
+          {micError ? "Try Mic Again" : "Re-record"}
         </button>
         <button
           onClick={handleSubmit}
