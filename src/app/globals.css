@@ -75,12 +75,3 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-@keyframes kenburns {
-  0% { transform: scale(1) translate(0, 0); }
-  50% { transform: scale(1.12) translate(-1.5%, -1%); }
-  100% { transform: scale(1.08) translate(1%, -0.5%); }
-}
-
-.duration-800 {
-  transition-duration: 800ms;
-}

@@ -163,6 +163,13 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
 
   return (
     <div className="w-full max-w-3xl space-y-4 animate-slide-up">
+      <style>{`
+        @keyframes kenburns {
+          0% { transform: scale(1) translate(0, 0); }
+          50% { transform: scale(1.12) translate(-1.5%, -1%); }
+          100% { transform: scale(1.08) translate(1%, -0.5%); }
+        }
+      `}</style>
       <div className="text-center space-y-1 mb-2">
         <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
           Your Rehearsal Experience
@@ -176,7 +183,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
       <div className="relative rounded-2xl overflow-hidden bg-black aspect-video group shadow-2xl shadow-black/50">
         {/* Main video/visual */}
         <div
-          className={`absolute inset-0 transition-opacity duration-800 ${transitioning ? "opacity-0" : "opacity-100"}`}
+          className={`absolute inset-0 transition-opacity duration-700 ${transitioning ? "opacity-0" : "opacity-100"}`}
         >
           {scene.video_url ? (
             <video
@@ -225,7 +232,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
 
         {/* Crossfade black overlay during transitions */}
         <div
-          className={`absolute inset-0 bg-black transition-opacity duration-800 pointer-events-none ${transitioning ? "opacity-80" : "opacity-0"}`}
+          className={`absolute inset-0 bg-black transition-opacity duration-700 pointer-events-none ${transitioning ? "opacity-80" : "opacity-0"}`}
         />
 
         {/* Cinematic top/bottom bars (letterbox feel) */}
