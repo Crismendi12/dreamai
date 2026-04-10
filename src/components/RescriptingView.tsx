@@ -45,12 +45,34 @@ export default function RescriptingView({ analysis, followUpAnswers }: Rescripti
         body: JSON.stringify({ analysis, followUpAnswers }),
       });
       const result = await res.json();
-      setData(result.endings);
-      if (result.endings?.recommended) {
-        setSelectedEnding(result.endings.recommended - 1);
+      // Normalize: the API returns {endings: parsed}, where parsed could be:
+      // - {endings: [...], recommended: N} (wrapped)
+      // - [{title, scenes}, ...] (just the array)
+      const raw = result.endings;
+      let normalized: RescriptData;
+      if (Array.isArray(raw)) {
+        normalized = { endings: raw, recommended: 1 };
+      } else if (raw?.endings && Array.isArray(raw.endings)) {
+        normalized = raw;
+      } else if (typeof raw === "object" && raw !== null) {
+        // Maybe keys like "1", "2", "3" or "mastery", "transformation", "safety"
+        const vals = Object.values(raw).filter((v): v is Ending =>
+          typeof v === "object" && v !== null && "title" in (v as Record<string, unknown>)
+        );
+        normalized = {
+          endings: vals,
+          recommended: raw.recommended || 1,
+          recommendation_reason: raw.recommendation_reason,
+        };
+      } else {
+        normalized = { endings: [] };
+      }
+      setData(normalized);
+      if (normalized.recommended) {
+        setSelectedEnding((normalized.recommended as number) - 1);
       }
     } catch {
-      // Handle error
+      setData({ endings: [] });
     }
     setLoading(false);
   };
@@ -65,8 +87,18 @@ export default function RescriptingView({ analysis, followUpAnswers }: Rescripti
     );
   }
 
-  if (!data?.endings) {
-    return <p className="text-[var(--text-secondary)]">Could not generate endings. Please try again.</p>;
+  if (!data?.endings || data.endings.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-4 animate-fade-in">
+        <p className="text-[var(--text-secondary)]">Could not generate endings.</p>
+        <button
+          onClick={() => { setLoading(true); fetchRescripts(); }}
+          className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
+        >
+          Try Again
+        </button>
+      </div>
+    );
   }
 
   const labels = ["Mastery", "Transformation", "Safety"];
