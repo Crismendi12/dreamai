@@ -5,14 +5,30 @@ import VoiceRecorder from "@/components/VoiceRecorder";
 import FollowUpChat from "@/components/FollowUpChat";
 import DreamDiary from "@/components/DreamDiary";
 import RescriptingView from "@/components/RescriptingView";
+import VideoGenerator from "@/components/VideoGenerator";
+import HabitTracker from "@/components/HabitTracker";
+import TransformationView from "@/components/TransformationView";
 
-type Step = "landing" | "record" | "analyzing" | "diary" | "followup" | "rescript";
+type Step = "landing" | "record" | "analyzing" | "diary" | "followup" | "rescript" | "video" | "tracker" | "transformation";
+
+interface SelectedEnding {
+  title: string;
+  type: string;
+  scenes: Array<{
+    scene_number: number;
+    visual_description: string;
+    narration: string;
+    duration_seconds: number;
+    mood: string;
+  }>;
+}
 
 export default function Home() {
   const [step, setStep] = useState<Step>("landing");
   const [transcript, setTranscript] = useState("");
   const [analysis, setAnalysis] = useState<Record<string, unknown> | null>(null);
   const [followUpAnswers, setFollowUpAnswers] = useState<{ q: string; a: string }[]>([]);
+  const [selectedEnding, setSelectedEnding] = useState<SelectedEnding | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleTranscript = async (text: string) => {
@@ -45,13 +61,20 @@ export default function Home() {
     setStep("rescript");
   };
 
-  const steps = ["Record", "Analyze", "Deepen", "Rescript"];
+  const handleEndingSelected = (ending: SelectedEnding) => {
+    setSelectedEnding(ending);
+    setStep("video");
+  };
+
+  const steps = ["Record", "Analyze", "Deepen", "Rescript", "Watch", "Heal"];
   const stepIndex = step === "landing" ? -1
     : step === "record" ? 0
-    : step === "analyzing" ? 1
-    : step === "diary" ? 1
+    : step === "analyzing" || step === "diary" ? 1
     : step === "followup" ? 2
-    : 3;
+    : step === "rescript" ? 3
+    : step === "video" ? 4
+    : step === "tracker" || step === "transformation" ? 5
+    : 0;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -69,21 +92,27 @@ export default function Home() {
         </div>
 
         {step !== "landing" && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {steps.map((s, i) => (
-              <div key={s} className="flex items-center gap-1.5">
-                <div className={`w-6 h-6 rounded-full text-[10px] font-medium flex items-center justify-center transition-all ${
+              <div key={s} className="flex items-center gap-1">
+                <div className={`w-5 h-5 rounded-full text-[9px] font-medium flex items-center justify-center transition-all ${
                   i <= stepIndex
                     ? "bg-[var(--accent)] text-white"
                     : "bg-[var(--bg-card)] text-[var(--text-muted)]"
                 }`}>
-                  {i < stepIndex ? "✓" : i + 1}
+                  {i < stepIndex ? (
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  ) : (
+                    i + 1
+                  )}
                 </div>
-                <span className={`text-xs hidden sm:block ${
+                <span className={`text-[10px] hidden sm:block ${
                   i <= stepIndex ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
                 }`}>{s}</span>
                 {i < steps.length - 1 && (
-                  <div className={`w-6 h-px ${i < stepIndex ? "bg-[var(--accent)]" : "bg-[var(--border)]"}`} />
+                  <div className={`w-4 h-px ${i < stepIndex ? "bg-[var(--accent)]" : "bg-[var(--border)]"}`} />
                 )}
               </div>
             ))}
@@ -126,7 +155,28 @@ export default function Home() {
           />
         )}
         {step === "rescript" && analysis && (
-          <RescriptingView analysis={analysis} followUpAnswers={followUpAnswers} />
+          <RescriptingView
+            analysis={analysis}
+            followUpAnswers={followUpAnswers}
+            onGenerateVideo={handleEndingSelected}
+          />
+        )}
+        {step === "video" && selectedEnding && (
+          <VideoGenerator
+            scenes={selectedEnding.scenes}
+            endingType={selectedEnding.type}
+            endingTitle={selectedEnding.title}
+            onComplete={() => setStep("tracker")}
+          />
+        )}
+        {step === "tracker" && (
+          <HabitTracker onComplete={() => setStep("transformation")} />
+        )}
+        {step === "transformation" && analysis && (
+          <TransformationView
+            analysis={analysis}
+            endingTitle={selectedEnding?.title || "Your New Ending"}
+          />
         )}
       </main>
 
@@ -144,7 +194,6 @@ export default function Home() {
 function LandingView({ onStart }: { onStart: () => void }) {
   return (
     <div className="flex flex-col items-center gap-10 max-w-xl text-center animate-fade-in">
-      {/* Hero icon */}
       <div className="relative">
         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-warm)] flex items-center justify-center">
           <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -154,7 +203,6 @@ function LandingView({ onStart }: { onStart: () => void }) {
         <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-warm)] opacity-10 blur-xl" />
       </div>
 
-      {/* Copy */}
       <div className="space-y-4">
         <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
           Transform Your
@@ -169,14 +217,12 @@ function LandingView({ onStart }: { onStart: () => void }) {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-6 w-full max-w-sm">
         <StatCard value="70%" label="Nightmare reduction" />
         <StatCard value="7-10" label="Days to see change" />
         <StatCard value="21min" label="Military suicide interval" />
       </div>
 
-      {/* CTA */}
       <button
         onClick={onStart}
         className="group px-10 py-4 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] text-white font-semibold text-lg hover:opacity-90 transition-all cursor-pointer"
@@ -185,7 +231,6 @@ function LandingView({ onStart }: { onStart: () => void }) {
         <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
       </button>
 
-      {/* How it works */}
       <div className="grid grid-cols-4 gap-4 w-full pt-4">
         <StepCard step="1" title="Record" desc="Speak or type your dream" />
         <StepCard step="2" title="Analyze" desc="AI extracts patterns" />
@@ -193,7 +238,6 @@ function LandingView({ onStart }: { onStart: () => void }) {
         <StepCard step="4" title="Rehearse" desc="Watch before sleep" />
       </div>
 
-      {/* Trust */}
       <p className="text-xs text-[var(--text-muted)] max-w-sm">
         Based on clinically validated Image Rehearsal Therapy protocols.
         Developed in collaboration with Dr. Michael Breus, PhD -- The Sleep Doctor.

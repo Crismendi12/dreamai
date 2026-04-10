@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import DreamPlayer from "./DreamPlayer";
 
 interface Scene {
   scene_number: number;
@@ -23,19 +22,10 @@ interface RescriptData {
   recommendation_reason?: string;
 }
 
-interface GeneratedScene {
-  scene_number: number;
-  image_url: string | null;
-  video_url?: string | null;
-  narration: string;
-  duration_seconds: number;
-  mood: string;
-  visual_description: string;
-}
-
 interface RescriptingViewProps {
   analysis: Record<string, unknown>;
   followUpAnswers: { q: string; a: string }[];
+  onGenerateVideo: (ending: { title: string; type: string; scenes: Scene[] }) => void;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -79,14 +69,11 @@ function normalizeEndings(raw: any): RescriptData {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-export default function RescriptingView({ analysis, followUpAnswers }: RescriptingViewProps) {
+export default function RescriptingView({ analysis, followUpAnswers, onGenerateVideo }: RescriptingViewProps) {
   const [data, setData] = useState<RescriptData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedEnding, setSelectedEnding] = useState<number | null>(null);
   const [activeScene, setActiveScene] = useState(0);
-  const [generatingVideo, setGeneratingVideo] = useState(false);
-  const [videoScenes, setVideoScenes] = useState<GeneratedScene[] | null>(null);
-  const [videoTotalDuration, setVideoTotalDuration] = useState(0);
 
   useEffect(() => {
     fetchRescripts();
@@ -274,65 +261,32 @@ export default function RescriptingView({ analysis, followUpAnswers }: Rescripti
         </div>
       )}
 
-      {/* Video Generation */}
-      {videoScenes ? (
-        <DreamPlayer
-          scenes={videoScenes}
-          totalDuration={videoTotalDuration}
-          endingTitle={ending?.title || "Your New Ending"}
-        />
-      ) : (
+      {/* Generate Video CTA */}
+      {ending && (
         <div className="glass rounded-xl p-6 text-center space-y-3">
           <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-            Generate Your Rehearsal Video
+            Generate Your Rehearsal Film
           </h3>
           <p className="text-sm text-[var(--text-secondary)]">
-            DreamAI will create a personalized immersive experience with AI-generated imagery
-            and calming narration. Watch with earbuds before sleep each night.
+            AI will create a cinematic POV video of your new ending -- {ending.scenes.length} scenes
+            with dreamlike camera movement and narration.
           </p>
           <div className="pt-2">
             <button
-              onClick={async () => {
-                if (!ending || selectedEnding === null) return;
-                setGeneratingVideo(true);
-                try {
-                  const endingTypes = ["mastery", "transformation", "safety"];
-                  const res = await fetch("/api/generate-scenes", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      scenes: ending.scenes,
-                      endingType: endingTypes[selectedEnding] || "mastery",
-                    }),
-                  });
-                  const result = await res.json();
-                  if (result.scenes) {
-                    setVideoScenes(result.scenes);
-                    setVideoTotalDuration(result.total_duration || 0);
-                  }
-                } catch {
-                  // Silently fail -- user can retry
-                }
-                setGeneratingVideo(false);
+              onClick={() => {
+                if (selectedEnding === null) return;
+                const endingTypes = ["mastery", "transformation", "safety"];
+                onGenerateVideo({
+                  title: ending.title,
+                  type: endingTypes[selectedEnding] || "mastery",
+                  scenes: ending.scenes,
+                });
               }}
-              disabled={generatingVideo}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] text-white font-medium hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] text-white font-medium hover:opacity-90 transition-all cursor-pointer"
             >
-              {generatingVideo ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Generating Imagery...
-                </>
-              ) : (
-                "Generate Rehearsal Video"
-              )}
+              Generate Rehearsal Film
             </button>
           </div>
-          {generatingVideo && (
-            <p className="text-xs text-[var(--text-muted)] animate-fade-in">
-              Generating {ending?.scenes?.length || 0} cinematic video scenes with Kling AI... this takes 2-4 minutes
-            </p>
-          )}
         </div>
       )}
     </div>
