@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 interface GeneratedScene {
   scene_number: number;
   image_url: string | null;
+  video_url?: string | null;
   narration: string;
   duration_seconds: number;
   mood: string;
@@ -21,27 +22,34 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
   const [currentScene, setCurrentScene] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [sceneProgress, setSceneProgress] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const [showEndCard, setShowEndCard] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const nextVideoRef = useRef<HTMLVideoElement | null>(null);
   const elapsedRef = useRef(0);
 
   const scene = scenes[currentScene];
+  const nextScene = currentScene < scenes.length - 1 ? scenes[currentScene + 1] : null;
 
   const speakNarration = useCallback((text: string) => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.85;
-    utterance.pitch = 0.9;
+    utterance.rate = 0.8;
+    utterance.pitch = 0.85;
     utterance.volume = 1;
 
-    // Try to find a calm, warm voice
     const voices = window.speechSynthesis.getVoices();
     const preferred = voices.find(
-      (v) => v.name.includes("Samantha") || v.name.includes("Karen") || v.name.includes("Daniel") || v.name.includes("Google UK English Female")
+      (v) =>
+        v.name.includes("Samantha") ||
+        v.name.includes("Karen") ||
+        v.name.includes("Daniel") ||
+        v.name.includes("Google UK English Female")
     );
     if (preferred) utterance.voice = preferred;
 
@@ -54,32 +62,60 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
   const goToScene = useCallback(
     (index: number) => {
       if (index >= scenes.length) {
-        // End of video
         setIsPlaying(false);
-        setCurrentScene(scenes.length - 1);
         setProgress(100);
+        setShowEndCard(true);
         window.speechSynthesis?.cancel();
         if (timerRef.current) clearInterval(timerRef.current);
         return;
       }
-      setCurrentScene(index);
-      setSceneProgress(0);
-      if (isPlaying) {
-        speakNarration(scenes[index].narration);
-      }
+
+      // Crossfade transition
+      setTransitioning(true);
+      setTimeout(() => {
+        setCurrentScene(index);
+        setTransitioning(false);
+        elapsedRef.current = 0;
+        if (isPlaying) {
+          speakNarration(scenes[index].narration);
+        }
+      }, 800);
     },
     [scenes, isPlaying, speakNarration]
   );
 
   const play = useCallback(() => {
     setIsPlaying(true);
+    setShowEndCard(false);
     speakNarration(scenes[currentScene].narration);
+    if (videoRef.current) {
+      videoRef.current.play();
+    }
   }, [currentScene, scenes, speakNarration]);
 
   const pause = useCallback(() => {
     setIsPlaying(false);
     window.speechSynthesis?.cancel();
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
   }, []);
+
+  // Sync video playback with scene changes
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      if (isPlaying) videoRef.current.play();
+    }
+  }, [currentScene, isPlaying]);
+
+  // Preload next video
+  useEffect(() => {
+    if (nextVideoRef.current && nextScene?.video_url) {
+      nextVideoRef.current.src = nextScene.video_url;
+      nextVideoRef.current.load();
+    }
+  }, [nextScene]);
 
   // Timer loop
   useEffect(() => {
@@ -93,14 +129,11 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
 
     timerRef.current = setInterval(() => {
       elapsedRef.current += 100;
-      const sp = Math.min(100, (elapsedRef.current / sceneDuration) * 100);
-      setSceneProgress(sp);
 
-      // Calculate overall progress
       const prevDuration = scenes
         .slice(0, currentScene)
         .reduce((s, sc) => s + sc.duration_seconds, 0);
-      const overallElapsed = prevDuration + (elapsedRef.current / 1000);
+      const overallElapsed = prevDuration + elapsedRef.current / 1000;
       setProgress(Math.min(100, (overallElapsed / totalDuration) * 100));
 
       if (elapsedRef.current >= sceneDuration) {
@@ -121,15 +154,15 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
   }, []);
 
   const moodGradients: Record<string, string> = {
-    empowering: "from-amber-900/40 to-yellow-600/20",
-    calm: "from-blue-900/40 to-slate-800/20",
-    warm: "from-orange-900/40 to-amber-700/20",
-    peaceful: "from-indigo-900/40 to-blue-800/20",
-    hopeful: "from-rose-900/30 to-amber-600/20",
+    empowering: "from-amber-900/60 to-yellow-600/20",
+    calm: "from-blue-900/60 to-slate-800/20",
+    warm: "from-orange-900/60 to-amber-700/20",
+    peaceful: "from-indigo-900/60 to-blue-800/20",
+    hopeful: "from-rose-900/50 to-amber-600/20",
   };
 
   return (
-    <div className="w-full max-w-2xl space-y-4 animate-slide-up">
+    <div className="w-full max-w-3xl space-y-4 animate-slide-up">
       <div className="text-center space-y-1 mb-2">
         <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
           Your Rehearsal Experience
@@ -139,156 +172,221 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
         </p>
       </div>
 
-      {/* Video Player */}
-      <div className="relative rounded-2xl overflow-hidden bg-black aspect-video group">
-        {/* Scene Image with Ken Burns */}
-        {scene.image_url ? (
-          <img
-            key={currentScene}
-            src={scene.image_url}
-            alt={scene.visual_description}
-            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
-            style={{
-              animation: isPlaying
-                ? `kenburns ${scene.duration_seconds}s ease-in-out forwards`
-                : "none",
-            }}
+      {/* Cinematic Player */}
+      <div className="relative rounded-2xl overflow-hidden bg-black aspect-video group shadow-2xl shadow-black/50">
+        {/* Main video/visual */}
+        <div
+          className={`absolute inset-0 transition-opacity duration-800 ${transitioning ? "opacity-0" : "opacity-100"}`}
+        >
+          {scene.video_url ? (
+            <video
+              ref={videoRef}
+              key={`video-${currentScene}`}
+              src={scene.video_url}
+              className="absolute inset-0 w-full h-full object-cover"
+              muted
+              loop
+              playsInline
+              autoPlay={isPlaying}
+            />
+          ) : scene.image_url ? (
+            <img
+              key={`img-${currentScene}`}
+              src={scene.image_url}
+              alt={scene.visual_description}
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{
+                animation: isPlaying
+                  ? `kenburns ${scene.duration_seconds}s ease-in-out forwards`
+                  : "none",
+              }}
+            />
+          ) : (
+            <div
+              className={`absolute inset-0 bg-gradient-to-br ${moodGradients[scene.mood] || moodGradients.calm} flex items-center justify-center`}
+            >
+              <p className="text-white/50 text-sm text-center px-12 italic max-w-md">
+                {scene.visual_description}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Preload next video (hidden) */}
+        {nextScene?.video_url && (
+          <video
+            ref={nextVideoRef}
+            className="hidden"
+            muted
+            playsInline
+            preload="auto"
           />
-        ) : (
-          <div
-            className={`absolute inset-0 bg-gradient-to-br ${moodGradients[scene.mood] || moodGradients.calm} flex items-center justify-center`}
-          >
-            <p className="text-white/60 text-sm text-center px-8 italic">
-              {scene.visual_description}
-            </p>
-          </div>
         )}
 
-        {/* Mood overlay */}
+        {/* Crossfade black overlay during transitions */}
         <div
-          className={`absolute inset-0 bg-gradient-to-t ${moodGradients[scene.mood] || moodGradients.calm} pointer-events-none opacity-40`}
+          className={`absolute inset-0 bg-black transition-opacity duration-800 pointer-events-none ${transitioning ? "opacity-80" : "opacity-0"}`}
         />
 
-        {/* Narration overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+        {/* Cinematic top/bottom bars (letterbox feel) */}
+        <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
+
+        {/* Narration subtitle */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 pb-8">
           <p
             key={`narr-${currentScene}`}
-            className={`text-white text-sm leading-relaxed italic transition-opacity duration-700 ${
-              isSpeaking ? "opacity-100" : "opacity-70"
+            className={`text-white text-base leading-relaxed text-center max-w-lg mx-auto transition-opacity duration-700 ${
+              isSpeaking ? "opacity-100" : "opacity-60"
             }`}
-            style={{ animation: "fade-in 0.8s ease-out" }}
+            style={{
+              animation: "fade-in 1s ease-out",
+              textShadow: "0 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)",
+            }}
           >
             &ldquo;{scene.narration}&rdquo;
           </p>
         </div>
 
-        {/* Scene counter */}
-        <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1">
-          <span className="text-white text-xs font-medium">
-            Scene {currentScene + 1} / {scenes.length}
+        {/* Scene counter (subtle) */}
+        <div className="absolute top-3 left-4 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span
+            className="text-white/60 text-xs font-medium"
+            style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+          >
+            {currentScene + 1} / {scenes.length}
           </span>
         </div>
 
-        {/* Mood indicator */}
-        <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1">
-          <span className="text-white/70 text-xs capitalize">{scene.mood}</span>
-        </div>
-
-        {/* Play/Pause overlay */}
-        <button
-          onClick={isPlaying ? pause : play}
-          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-        >
-          <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
-            {isPlaying ? (
-              <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <rect x="6" y="4" width="4" height="16" rx="1" />
-                <rect x="14" y="4" width="4" height="16" rx="1" />
-              </svg>
-            ) : (
-              <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            )}
+        {/* HD Video badge */}
+        {scene.video_url && (
+          <div className="absolute top-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span
+              className="text-emerald-400/80 text-xs font-medium"
+              style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+            >
+              AI Video
+            </span>
           </div>
-        </button>
+        )}
+
+        {/* End card */}
+        {showEndCard && (
+          <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-4 animate-fade-in">
+            <p className="text-white/80 text-lg font-light">Session Complete</p>
+            <p className="text-white/50 text-sm max-w-sm text-center">
+              Watch again tomorrow night before sleep. Repetition rewires your dream patterns.
+            </p>
+            <button
+              onClick={() => {
+                setCurrentScene(0);
+                setProgress(0);
+                setShowEndCard(false);
+                elapsedRef.current = 0;
+                play();
+              }}
+              className="mt-2 px-6 py-2.5 rounded-full bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors cursor-pointer border border-white/10"
+            >
+              Watch Again
+            </button>
+          </div>
+        )}
+
+        {/* Play/Pause overlay (only on hover, minimal) */}
+        {!showEndCard && (
+          <button
+            onClick={isPlaying ? pause : play}
+            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+          >
+            <div className="w-16 h-16 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/10">
+              {isPlaying ? (
+                <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+              ) : (
+                <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </div>
+          </button>
+        )}
       </div>
 
-      {/* Progress bar */}
-      <div className="space-y-2">
-        <div className="w-full h-1.5 bg-[var(--bg-card)] rounded-full overflow-hidden">
+      {/* Timeline */}
+      <div className="space-y-3">
+        {/* Progress bar */}
+        <div className="relative w-full h-1 bg-white/5 rounded-full overflow-hidden cursor-pointer group/bar">
           <div
             className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] transition-all duration-200"
             style={{ width: `${progress}%` }}
           />
+          {/* Scene markers */}
+          {scenes.map((_, i) => {
+            if (i === 0) return null;
+            const markerPos = scenes.slice(0, i).reduce((s, sc) => s + sc.duration_seconds, 0) / totalDuration * 100;
+            return (
+              <div
+                key={i}
+                className="absolute top-0 h-full w-px bg-white/20"
+                style={{ left: `${markerPos}%` }}
+              />
+            );
+          })}
         </div>
 
-        {/* Scene dots */}
-        <div className="flex justify-between px-1">
-          {scenes.map((_, i) => (
+        {/* Controls row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <button
-              key={i}
-              onClick={() => {
-                goToScene(i);
-                elapsedRef.current = 0;
-              }}
-              className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-                i === currentScene
-                  ? "bg-[var(--accent)] scale-125"
-                  : i < currentScene
-                  ? "bg-[var(--accent)]/50"
-                  : "bg-[var(--bg-elevated)]"
-              }`}
-            />
-          ))}
+              onClick={() => goToScene(Math.max(0, currentScene - 1))}
+              disabled={currentScene === 0}
+              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+
+            <button
+              onClick={isPlaying ? pause : play}
+              className="w-10 h-10 rounded-full bg-[var(--accent)] text-white flex items-center justify-center hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
+            >
+              {isPlaying ? (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </button>
+
+            <button
+              onClick={() => goToScene(Math.min(scenes.length - 1, currentScene + 1))}
+              disabled={currentScene === scenes.length - 1}
+              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          </div>
+
+          <span className="text-xs text-[var(--text-muted)] font-mono">
+            Scene {currentScene + 1} of {scenes.length}
+          </span>
         </div>
-      </div>
-
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-4">
-        <button
-          onClick={() => { goToScene(Math.max(0, currentScene - 1)); elapsedRef.current = 0; }}
-          disabled={currentScene === 0}
-          className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-          </svg>
-        </button>
-
-        <button
-          onClick={isPlaying ? pause : play}
-          className="w-12 h-12 rounded-full bg-[var(--accent)] text-white flex items-center justify-center hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
-        >
-          {isPlaying ? (
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <rect x="6" y="4" width="4" height="16" rx="1" />
-              <rect x="14" y="4" width="4" height="16" rx="1" />
-            </svg>
-          ) : (
-            <svg className="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          )}
-        </button>
-
-        <button
-          onClick={() => { goToScene(Math.min(scenes.length - 1, currentScene + 1)); elapsedRef.current = 0; }}
-          disabled={currentScene === scenes.length - 1}
-          className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 transition-colors cursor-pointer disabled:cursor-not-allowed"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-          </svg>
-        </button>
       </div>
 
       {/* Instructions */}
-      <div className="glass rounded-xl p-4 text-center space-y-2">
+      <div className="glass rounded-xl p-4 text-center">
         <p className="text-xs text-[var(--text-muted)]">
-          For best results, watch this experience each night before sleep with earbuds in.
-          Focus on the imagery and narration. Over 7-10 days, your brain will begin
-          integrating this new ending into your dream patterns.
+          Watch this experience each night before sleep with earbuds. Focus on the imagery and narration.
+          Over 7-10 days, your brain will integrate this new ending into your dream patterns.
         </p>
       </div>
     </div>

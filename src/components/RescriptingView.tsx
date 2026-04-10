@@ -26,6 +26,7 @@ interface RescriptData {
 interface GeneratedScene {
   scene_number: number;
   image_url: string | null;
+  video_url?: string | null;
   narration: string;
   duration_seconds: number;
   mood: string;
@@ -329,7 +330,7 @@ export default function RescriptingView({ analysis, followUpAnswers }: Rescripti
           </div>
           {generatingVideo && (
             <p className="text-xs text-[var(--text-muted)] animate-fade-in">
-              Creating {ending?.scenes?.length || 0} cinematic scenes with AI... this takes about 30 seconds
+              Generating {ending?.scenes?.length || 0} cinematic video scenes with Kling AI... this takes 2-4 minutes
             </p>
           )}
         </div>

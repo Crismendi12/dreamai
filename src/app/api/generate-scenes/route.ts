@@ -10,8 +10,8 @@ interface Scene {
   mood: string;
 }
 
-interface FalResult {
-  images: { url: string }[];
+interface FalVideoResult {
+  video: { url: string };
 }
 
 export async function POST(request: Request) {
@@ -21,49 +21,80 @@ export async function POST(request: Request) {
     return Response.json({ error: "No scenes provided" }, { status: 400 });
   }
 
-  const moodStyles: Record<string, string> = {
-    empowering: "golden warm light, heroic atmosphere, dramatic cinematic lighting",
-    calm: "soft diffused light, serene atmosphere, gentle pastel tones",
-    warm: "amber golden hour lighting, cozy intimate feeling, soft focus",
-    peaceful: "cool blue twilight, tranquil, ethereal mist, gentle glow",
-    hopeful: "sunrise colors, volumetric light rays, uplifting atmosphere",
+  const moodCinema: Record<string, string> = {
+    empowering:
+      "dramatic golden hour lighting, volumetric god rays, heroic atmosphere, warm amber tones, cinematic lens flare, slow motion feel",
+    calm:
+      "soft ethereal diffused light, gentle fog, serene blue-silver palette, shallow depth of field, peaceful floating particles",
+    warm:
+      "intimate amber candlelight, cozy golden bokeh, soft focus background, gentle warm color grading, tender atmosphere",
+    peaceful:
+      "cool blue twilight, moonlit mist, tranquil water reflections, ethereal glow, slow drifting clouds, dreamlike haze",
+    hopeful:
+      "dawn breaking through clouds, pink and gold sunrise palette, volumetric light shafts, ascending perspective, optimistic atmosphere",
   };
 
-  const endingStyles: Record<string, string> = {
-    mastery: "empowering, golden light, strength, heroic framing",
-    transformation: "ethereal, metamorphosis, beautiful light transitions",
-    safety: "warm, protected, soft lighting, haven, sanctuary",
+  const moodCamera: Record<string, string> = {
+    empowering:
+      "slow dramatic dolly forward, slight low angle looking up, steady heroic camera movement",
+    calm:
+      "gentle floating drift, smooth lateral pan, breathing camera movement like meditation",
+    warm:
+      "intimate slow push in, soft handheld feel, tender dolly closer to subject",
+    peaceful:
+      "serene glide, weightless floating camera, slow ascending crane shot",
+    hopeful:
+      "gradual upward tilt revealing sky, slow rising camera, expanding wide shot",
+  };
+
+  const endingTone: Record<string, string> = {
+    mastery: "triumphant, powerful, overcoming adversity, strength emerging",
+    transformation: "metamorphosis, beauty emerging from darkness, transcendent change",
+    safety: "sanctuary, warmth, protection, coming home, deep comfort",
   };
 
   try {
-    // Generate all images in parallel using Flux
-    const imagePromises = scenes.map(async (scene: Scene, index: number) => {
-      const moodStyle = moodStyles[scene.mood] || moodStyles.calm;
-      const endingStyle = endingStyles[endingType] || "";
+    // Generate all video clips in parallel with Kling v2 text-to-video
+    const videoPromises = scenes.map(async (scene: Scene, index: number) => {
+      const cinema = moodCinema[scene.mood] || moodCinema.calm;
+      const camera = moodCamera[scene.mood] || moodCamera.calm;
+      const tone = endingTone[endingType] || "";
 
-      const prompt = `Cinematic still frame, first-person POV perspective, 16:9 aspect ratio, photorealistic, atmospheric, ${moodStyle}, ${endingStyle} -- ${scene.visual_description}. Ultra high quality, no text, no watermarks, dreamlike cinematic quality.`;
+      const prompt = [
+        "Cinematic dream sequence, first-person POV perspective, photorealistic, 4K quality, film grain",
+        camera,
+        cinema,
+        tone,
+        scene.visual_description,
+        "No text, no watermarks, no UI elements. Smooth continuous motion. Dreamlike cinematic quality, Terrence Malick visual style.",
+      ].join(". ");
 
       try {
-        const result = await fal.subscribe("fal-ai/flux/schnell", {
+        const result = await fal.subscribe("fal-ai/kling-video/v2/master/text-to-video", {
           input: {
             prompt,
-            image_size: "landscape_16_9",
-            num_images: 1,
+            duration: "10",
+            aspect_ratio: "16:9",
+            negative_prompt: "blur, distort, low quality, text, watermark, logo, cartoon, anime, ugly, deformed, extra limbs, bad anatomy, glitch, artifact, noise",
+            cfg_scale: 0.5,
           },
+          pollInterval: 3000,
         });
 
-        const falResult = result.data as FalResult;
+        const videoResult = result.data as FalVideoResult;
         return {
           scene_number: scene.scene_number || index + 1,
-          image_url: falResult.images?.[0]?.url || null,
+          video_url: videoResult.video?.url || null,
+          image_url: null,
           narration: scene.narration,
-          duration_seconds: scene.duration_seconds || 10,
+          duration_seconds: 10,
           mood: scene.mood,
           visual_description: scene.visual_description,
         };
       } catch {
         return {
           scene_number: scene.scene_number || index + 1,
+          video_url: null,
           image_url: null,
           narration: scene.narration,
           duration_seconds: scene.duration_seconds || 10,
@@ -73,7 +104,7 @@ export async function POST(request: Request) {
       }
     });
 
-    const generatedScenes = await Promise.all(imagePromises);
+    const generatedScenes = await Promise.all(videoPromises);
 
     return Response.json({
       scenes: generatedScenes,
@@ -81,7 +112,7 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     return Response.json(
-      { error: (err as Error).message || "Image generation failed" },
+      { error: (err as Error).message || "Scene generation failed" },
       { status: 503 }
     );
   }
