@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import DreamPlayer from "./DreamPlayer";
 
 interface Scene {
   scene_number: number;
@@ -20,6 +21,15 @@ interface RescriptData {
   endings?: Ending[];
   recommended?: number;
   recommendation_reason?: string;
+}
+
+interface GeneratedScene {
+  scene_number: number;
+  image_url: string | null;
+  narration: string;
+  duration_seconds: number;
+  mood: string;
+  visual_description: string;
 }
 
 interface RescriptingViewProps {
@@ -73,6 +83,9 @@ export default function RescriptingView({ analysis, followUpAnswers }: Rescripti
   const [loading, setLoading] = useState(true);
   const [selectedEnding, setSelectedEnding] = useState<number | null>(null);
   const [activeScene, setActiveScene] = useState(0);
+  const [generatingVideo, setGeneratingVideo] = useState(false);
+  const [videoScenes, setVideoScenes] = useState<GeneratedScene[] | null>(null);
+  const [videoTotalDuration, setVideoTotalDuration] = useState(0);
 
   useEffect(() => {
     fetchRescripts();
@@ -260,22 +273,67 @@ export default function RescriptingView({ analysis, followUpAnswers }: Rescripti
         </div>
       )}
 
-      {/* CTA */}
-      <div className="glass rounded-xl p-6 text-center space-y-3">
-        <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-          Ready for Your Rehearsal Video
-        </h3>
-        <p className="text-sm text-[var(--text-secondary)]">
-          In the full version, DreamAI will generate a personalized 2-3 minute immersive video
-          based on these scenes -- with AI-generated imagery, calming narration, and ambient sound.
-          You'll watch it with earbuds before sleep each night.
-        </p>
-        <div className="pt-2">
-          <span className="inline-block px-4 py-2 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-sm font-medium border border-[var(--accent)]/20">
-            Video Generation Coming Soon
-          </span>
+      {/* Video Generation */}
+      {videoScenes ? (
+        <DreamPlayer
+          scenes={videoScenes}
+          totalDuration={videoTotalDuration}
+          endingTitle={ending?.title || "Your New Ending"}
+        />
+      ) : (
+        <div className="glass rounded-xl p-6 text-center space-y-3">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+            Generate Your Rehearsal Video
+          </h3>
+          <p className="text-sm text-[var(--text-secondary)]">
+            DreamAI will create a personalized immersive experience with AI-generated imagery
+            and calming narration. Watch with earbuds before sleep each night.
+          </p>
+          <div className="pt-2">
+            <button
+              onClick={async () => {
+                if (!ending || selectedEnding === null) return;
+                setGeneratingVideo(true);
+                try {
+                  const endingTypes = ["mastery", "transformation", "safety"];
+                  const res = await fetch("/api/generate-scenes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      scenes: ending.scenes,
+                      endingType: endingTypes[selectedEnding] || "mastery",
+                    }),
+                  });
+                  const result = await res.json();
+                  if (result.scenes) {
+                    setVideoScenes(result.scenes);
+                    setVideoTotalDuration(result.total_duration || 0);
+                  }
+                } catch {
+                  // Silently fail -- user can retry
+                }
+                setGeneratingVideo(false);
+              }}
+              disabled={generatingVideo}
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] text-white font-medium hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {generatingVideo ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Generating Imagery...
+                </>
+              ) : (
+                "Generate Rehearsal Video"
+              )}
+            </button>
+          </div>
+          {generatingVideo && (
+            <p className="text-xs text-[var(--text-muted)] animate-fade-in">
+              Creating {ending?.scenes?.length || 0} cinematic scenes with AI... this takes about 30 seconds
+            </p>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
