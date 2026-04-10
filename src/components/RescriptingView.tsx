@@ -27,6 +27,47 @@ interface RescriptingViewProps {
   followUpAnswers: { q: string; a: string }[];
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function normalizeEndings(raw: any): RescriptData {
+  if (!raw || typeof raw !== "object") return { endings: [] };
+
+  // Case 1: already an array of endings
+  if (Array.isArray(raw)) {
+    return { endings: raw, recommended: 1 };
+  }
+
+  // Case 2: {endings: [...], recommended: N}
+  if (Array.isArray(raw.endings)) {
+    return {
+      endings: raw.endings,
+      recommended: raw.recommended || 1,
+      recommendation_reason: raw.recommendation_reason || raw.reason,
+    };
+  }
+
+  // Case 3: {ending_1: {}, ending_2: {}, mastery_ending: {}, etc.}
+  // Extract all object values that look like endings (have title + scenes)
+  const endingObjects: Ending[] = [];
+  for (const [, val] of Object.entries(raw)) {
+    if (val && typeof val === "object" && !Array.isArray(val)) {
+      const obj = val as any;
+      if (obj.title && obj.scenes) {
+        endingObjects.push(obj as Ending);
+      }
+    }
+  }
+  if (endingObjects.length > 0) {
+    return {
+      endings: endingObjects,
+      recommended: raw.recommended || 1,
+      recommendation_reason: raw.recommendation_reason || raw.reason,
+    };
+  }
+
+  return { endings: [] };
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 export default function RescriptingView({ analysis, followUpAnswers }: RescriptingViewProps) {
   const [data, setData] = useState<RescriptData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,31 +86,12 @@ export default function RescriptingView({ analysis, followUpAnswers }: Rescripti
         body: JSON.stringify({ analysis, followUpAnswers }),
       });
       const result = await res.json();
-      // Normalize: the API returns {endings: parsed}, where parsed could be:
-      // - {endings: [...], recommended: N} (wrapped)
-      // - [{title, scenes}, ...] (just the array)
       const raw = result.endings;
-      let normalized: RescriptData;
-      if (Array.isArray(raw)) {
-        normalized = { endings: raw, recommended: 1 };
-      } else if (raw?.endings && Array.isArray(raw.endings)) {
-        normalized = raw;
-      } else if (typeof raw === "object" && raw !== null) {
-        // Maybe keys like "1", "2", "3" or "mastery", "transformation", "safety"
-        const vals = Object.values(raw).filter((v): v is Ending =>
-          typeof v === "object" && v !== null && "title" in (v as Record<string, unknown>)
-        );
-        normalized = {
-          endings: vals,
-          recommended: raw.recommended || 1,
-          recommendation_reason: raw.recommendation_reason,
-        };
-      } else {
-        normalized = { endings: [] };
-      }
+      const normalized = normalizeEndings(raw);
       setData(normalized);
-      if (normalized.recommended) {
-        setSelectedEnding((normalized.recommended as number) - 1);
+      if (normalized.endings && normalized.endings.length > 0) {
+        const rec = typeof normalized.recommended === "number" ? normalized.recommended : 1;
+        setSelectedEnding(Math.max(0, Math.min(rec - 1, normalized.endings.length - 1)));
       }
     } catch {
       setData({ endings: [] });
