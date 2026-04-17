@@ -19,7 +19,7 @@ The three approaches should be:
 For EACH ending, provide:
 - A title (2-4 words)
 - A brief description of the new ending (2-3 sentences)
-- A scene-by-scene breakdown (4-5 scenes) for video visualization. Each scene needs:
+- A scene-by-scene breakdown (exactly 3 scenes) for video visualization. Each scene needs:
   - scene_number
   - visual_description (detailed enough to generate an AI image)
   - narration (what a calm, warm voice would say over this scene)

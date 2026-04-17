@@ -133,7 +133,7 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
   return (
     <div className="w-full max-w-2xl space-y-6 animate-slide-up">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
+        <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
           Rescript Your Dream
         </h2>
         <p className="text-[var(--text-secondary)] text-sm">
@@ -282,7 +282,7 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
                   scenes: ending.scenes,
                 });
               }}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] text-white font-medium hover:opacity-90 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl btn-primary cursor-pointer"
             >
               Generate Rehearsal Film
             </button>

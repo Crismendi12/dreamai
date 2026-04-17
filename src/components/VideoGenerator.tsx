@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import DreamPlayer from "./DreamPlayer";
 
 interface Scene {
@@ -11,23 +11,14 @@ interface Scene {
   mood: string;
 }
 
-interface QueuedScene {
-  scene_number: number;
-  request_id: string | null;
-  narration: string;
-  duration_seconds: number;
-  mood: string;
-  visual_description: string;
-}
-
 interface GeneratedScene {
   scene_number: number;
   video_url: string | null;
-  image_url: null;
   narration: string;
   duration_seconds: number;
   mood: string;
   visual_description: string;
+  error?: string;
 }
 
 interface VideoGeneratorProps {
@@ -38,16 +29,21 @@ interface VideoGeneratorProps {
 }
 
 export default function VideoGenerator({ scenes, endingType, endingTitle, onComplete }: VideoGeneratorProps) {
-  const [phase, setPhase] = useState<"submitting" | "generating" | "done">("submitting");
-  const [queuedScenes, setQueuedScenes] = useState<QueuedScene[]>([]);
+  const [phase, setPhase] = useState<"generating" | "done">("generating");
   const [completedScenes, setCompletedScenes] = useState<GeneratedScene[]>([]);
-  const [sceneStatuses, setSceneStatuses] = useState<Record<number, string>>({});
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const completedRef = useRef<Set<number>>(new Set());
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
 
-  // Step 1: Submit all scenes to the queue
+  // Timer for user feedback
   useEffect(() => {
-    const submit = async () => {
+    if (phase !== "generating") return;
+    const timer = setInterval(() => setElapsed(e => e + 1), 1000);
+    return () => clearInterval(timer);
+  }, [phase]);
+
+  // Single API call that blocks until all videos are ready
+  useEffect(() => {
+    const generate = async () => {
       try {
         const res = await fetch("/api/generate-scenes", {
           method: "POST",
@@ -55,170 +51,77 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
           body: JSON.stringify({ scenes, endingType }),
         });
         const data = await res.json();
-        if (data.scenes) {
-          setQueuedScenes(data.scenes);
-          setPhase("generating");
-          // Initialize statuses
-          const statuses: Record<number, string> = {};
-          data.scenes.forEach((s: QueuedScene) => {
-            statuses[s.scene_number] = s.request_id ? "IN_QUEUE" : "FAILED";
-          });
-          setSceneStatuses(statuses);
+
+        if (data.error) {
+          if (data.error.includes("balance") || data.error.includes("locked")) {
+            setGenerationError("Video generation service needs credits. Please top up at fal.ai/dashboard/billing");
+          } else {
+            setGenerationError(data.error);
+          }
+        } else if (data.scenes) {
+          setCompletedScenes(data.scenes);
         }
       } catch {
-        setPhase("done");
+        setGenerationError("Connection error -- please check your internet and try again");
       }
+      setPhase("done");
     };
-    submit();
+    generate();
   }, [scenes, endingType]);
 
-  // Step 2: Poll for completion
-  const pollScenes = useCallback(async () => {
-    if (queuedScenes.length === 0) return;
-
-    const pending = queuedScenes.filter(
-      (s) => s.request_id && !completedRef.current.has(s.scene_number)
-    );
-
-    if (pending.length === 0) {
-      // All done
-      if (pollingRef.current) clearInterval(pollingRef.current);
-      setPhase("done");
-      return;
-    }
-
-    // Check each pending scene
-    await Promise.all(
-      pending.map(async (scene) => {
-        try {
-          const res = await fetch("/api/scene-status", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ request_id: scene.request_id }),
-          });
-          const data = await res.json();
-
-          setSceneStatuses((prev) => ({ ...prev, [scene.scene_number]: data.status }));
-
-          if (data.status === "COMPLETED" && data.video_url) {
-            completedRef.current.add(scene.scene_number);
-            setCompletedScenes((prev) => [
-              ...prev,
-              {
-                scene_number: scene.scene_number,
-                video_url: data.video_url,
-                image_url: null,
-                narration: scene.narration,
-                duration_seconds: scene.duration_seconds,
-                mood: scene.mood,
-                visual_description: scene.visual_description,
-              },
-            ]);
-          } else if (data.status === "FAILED") {
-            completedRef.current.add(scene.scene_number);
-            setCompletedScenes((prev) => [
-              ...prev,
-              {
-                scene_number: scene.scene_number,
-                video_url: null,
-                image_url: null,
-                narration: scene.narration,
-                duration_seconds: scene.duration_seconds,
-                mood: scene.mood,
-                visual_description: scene.visual_description,
-              },
-            ]);
-          }
-        } catch {
-          // Ignore poll errors, retry next cycle
-        }
-      })
-    );
-  }, [queuedScenes]);
-
-  useEffect(() => {
-    if (phase !== "generating") return;
-    // Poll every 5 seconds
-    pollScenes();
-    pollingRef.current = setInterval(pollScenes, 5000);
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, [phase, pollScenes]);
-
   const totalScenes = scenes.length;
-  const completedCount = completedRef.current.size;
-  const progressPct = totalScenes > 0 ? (completedCount / totalScenes) * 100 : 0;
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+  const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
 
   // Generating phase -- show cinematic loading
-  if (phase !== "done") {
+  if (phase === "generating") {
     return (
       <div className="w-full max-w-2xl space-y-8 animate-fade-in">
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
+          <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
             Creating Your Dream Film
           </h2>
           <p className="text-[var(--text-secondary)] text-sm">
-            AI is generating {totalScenes} cinematic POV scenes with Kling v2
+            AI is generating {totalScenes} cinematic POV scenes with Kling 2.6
           </p>
         </div>
 
-        {/* Progress bar */}
+        {/* Animated progress */}
         <div className="space-y-3">
           <div className="w-full h-2 bg-[var(--bg-card)] rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] transition-all duration-1000"
-              style={{ width: `${Math.max(progressPct, phase === "submitting" ? 5 : 10)}%` }}
+              className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] animate-pulse"
+              style={{ width: "60%" }}
             />
           </div>
           <p className="text-xs text-[var(--text-muted)] text-center">
-            {phase === "submitting"
-              ? "Submitting scenes to AI pipeline..."
-              : `${completedCount} of ${totalScenes} scenes ready`}
+            Rendering scenes... {timeStr} elapsed
           </p>
         </div>
 
-        {/* Per-scene status */}
+        {/* Scene cards */}
         <div className="grid grid-cols-2 gap-3">
-          {(queuedScenes.length > 0 ? queuedScenes : scenes).map((s, i) => {
-            const num = "scene_number" in s ? s.scene_number : i + 1;
-            const status = sceneStatuses[num] || "WAITING";
-            const isComplete = status === "COMPLETED";
-            const isFailed = status === "FAILED";
-            const isProcessing = status === "IN_PROGRESS";
-
-            return (
-              <div
-                key={num}
-                className={`glass rounded-xl p-4 space-y-2 transition-all ${isComplete ? "border border-[var(--success)]/30" : ""}`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-[var(--text-muted)]">
-                    Scene {num}
-                  </span>
-                  {isComplete ? (
-                    <span className="text-xs text-[var(--success)] font-medium">Ready</span>
-                  ) : isFailed ? (
-                    <span className="text-xs text-[var(--danger)] font-medium">Failed</span>
-                  ) : isProcessing ? (
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
-                      <span className="text-xs text-[var(--accent)]">Rendering</span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-[var(--text-muted)]">Queued</span>
-                  )}
+          {scenes.map((s, i) => (
+            <div key={i} className="glass rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-[var(--text-muted)]">
+                  Scene {s.scene_number || i + 1}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
+                  <span className="text-xs text-[var(--accent)]">Rendering</span>
                 </div>
-                <p className="text-xs text-[var(--text-secondary)] line-clamp-2">
-                  {s.visual_description}
-                </p>
               </div>
-            );
-          })}
+              <p className="text-xs text-[var(--text-secondary)] line-clamp-2">
+                {s.visual_description}
+              </p>
+            </div>
+          ))}
         </div>
 
         <p className="text-xs text-[var(--text-muted)] text-center italic">
-          Each scene takes 1-3 minutes to render. You can wait here or come back.
+          Each scene takes ~2 minutes to render. All {totalScenes} generate in parallel.
         </p>
       </div>
     );
@@ -231,14 +134,47 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
 
   if (!hasVideos) {
     return (
-      <div className="flex flex-col items-center gap-4 animate-fade-in">
-        <p className="text-[var(--text-secondary)]">Video generation failed. Please try again.</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
-        >
-          Retry
-        </button>
+      <div className="flex flex-col items-center gap-6 animate-fade-in max-w-md text-center">
+        {generationError ? (
+          <>
+            <div className="w-14 h-14 rounded-full bg-[var(--danger)]/10 flex items-center justify-center">
+              <svg className="w-7 h-7 text-[var(--danger)]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+            </div>
+            <div className="space-y-2">
+              <p className="text-[var(--text-primary)] font-medium">Video Generation Unavailable</p>
+              <p className="text-sm text-[var(--text-secondary)]">{generationError}</p>
+            </div>
+            {generationError.includes("credits") || generationError.includes("balance") || generationError.includes("billing") ? (
+              <a
+                href="https://fal.ai/dashboard/billing"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors"
+              >
+                Add Credits at fal.ai
+              </a>
+            ) : (
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
+              >
+                Retry
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-[var(--text-secondary)]">Video generation failed. Please try again.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
+            >
+              Retry
+            </button>
+          </>
+        )}
       </div>
     );
   }
@@ -253,7 +189,7 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
       <div className="flex justify-center">
         <button
           onClick={onComplete}
-          className="px-8 py-3 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] text-white font-medium hover:opacity-90 transition-all cursor-pointer"
+          className="px-8 py-3 rounded-xl btn-primary cursor-pointer"
         >
           Continue to Your Healing Plan
         </button>

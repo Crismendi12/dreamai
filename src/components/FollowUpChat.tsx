@@ -73,8 +73,8 @@ export default function FollowUpChat({ transcript, analysis, onComplete }: Follo
   return (
     <div className="flex flex-col gap-6 w-full max-w-lg animate-slide-up">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
-          Let's Go Deeper
+        <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
+          Let&apos;s Go Deeper
         </h2>
         <p className="text-[var(--text-secondary)] text-sm">
           These details help us create a more vivid and personal experience for you.

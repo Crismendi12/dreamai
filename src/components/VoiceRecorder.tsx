@@ -103,36 +103,37 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
 
   if (mode === "idle") {
     return (
-      <div className="flex flex-col items-center gap-8 animate-fade-in">
+      <div className="flex flex-col items-center gap-10 animate-fade-in">
         <div className="text-center space-y-3">
-          <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
+          <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
             Record Your Dream
           </h2>
-          <p className="text-[var(--text-secondary)] max-w-md">
+          <p className="text-[var(--text-secondary)] max-w-md text-sm leading-relaxed">
             Speak freely about what you experienced. Every detail matters -- what you saw, heard, felt. Take your time.
           </p>
         </div>
 
         <button
           onClick={startRecording}
-          className="group relative w-28 h-28 rounded-full bg-[var(--accent)] hover:bg-[var(--accent)]/90 transition-all duration-300 flex items-center justify-center cursor-pointer"
+          className="group relative w-28 h-28 rounded-full flex items-center justify-center cursor-pointer"
         >
-          <div className="absolute inset-0 rounded-full bg-[var(--accent)] opacity-20 group-hover:opacity-30 group-hover:scale-110 transition-all duration-300" />
-          <svg className="w-10 h-10 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
+          <div className="absolute inset-0 rounded-full bg-[var(--accent)]/10 group-hover:bg-[var(--accent)]/15 transition-all duration-500 group-hover:scale-110" />
+          <div className="absolute inset-2 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-warm)] shadow-lg shadow-[var(--accent)]/20 group-hover:shadow-[var(--accent)]/30 transition-all duration-300" />
+          <svg className="w-10 h-10 text-[#080B14] relative z-10" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
             <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
           </svg>
         </button>
 
-        <p className="text-xs text-[var(--text-muted)]">
-          Or type your dream below
-        </p>
-        <button
-          onClick={() => setMode("review")}
-          className="text-sm text-[var(--accent)] hover:text-[var(--accent)]/80 transition-colors cursor-pointer"
-        >
-          I prefer to type
-        </button>
+        <div className="flex flex-col items-center gap-2">
+          <span className="text-xs text-[var(--text-muted)]">or</span>
+          <button
+            onClick={() => setMode("review")}
+            className="text-sm text-[var(--accent)] hover:text-[var(--accent-warm)] transition-colors cursor-pointer border-b border-[var(--accent)]/20 hover:border-[var(--accent)]/40 pb-0.5"
+          >
+            I prefer to type
+          </button>
+        </div>
       </div>
     );
   }
@@ -141,25 +142,25 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
     return (
       <div className="flex flex-col items-center gap-8 animate-fade-in">
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
+          <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
             Recording...
           </h2>
-          <p className="text-[var(--text-secondary)]">
-            Speak about your dream. Press stop when you're done.
+          <p className="text-sm text-[var(--text-secondary)]">
+            Speak about your dream. Press stop when you&apos;re done.
           </p>
         </div>
 
         <div className="flex flex-col items-center gap-4">
           <button
             onClick={stopRecording}
-            className="relative w-28 h-28 rounded-full bg-[var(--danger)] flex items-center justify-center cursor-pointer"
+            className="relative w-28 h-28 rounded-full bg-[var(--danger)]/90 flex items-center justify-center cursor-pointer shadow-lg shadow-[var(--danger)]/20"
           >
-            <div className="absolute inset-0 rounded-full bg-[var(--danger)] recording-pulse" />
+            <div className="absolute inset-0 rounded-full bg-[var(--danger)]/40 recording-pulse" />
             <svg className="w-8 h-8 text-white relative z-10" fill="currentColor" viewBox="0 0 24 24">
               <rect x="6" y="6" width="12" height="12" rx="2" />
             </svg>
           </button>
-          <span className="text-lg font-mono text-[var(--text-secondary)]">
+          <span className="text-lg font-mono text-[var(--text-secondary)] tabular-nums">
             {formatTime(recordingTime)}
           </span>
         </div>
@@ -169,19 +170,24 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
 
   if (mode === "transcribing") {
     return (
-      <div className="flex flex-col items-center gap-4 animate-fade-in">
-        <div className="w-10 h-10 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-        <p className="text-[var(--text-secondary)]">Transcribing your recording...</p>
-        <p className="text-xs text-[var(--text-muted)]">Using AI to convert speech to text</p>
+      <div className="flex flex-col items-center gap-5 animate-fade-in">
+        <div className="relative w-12 h-12">
+          <div className="absolute inset-0 rounded-full border-2 border-[var(--accent)]/20" />
+          <div className="absolute inset-0 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+        </div>
+        <div className="text-center space-y-1">
+          <p className="text-[var(--text-primary)] font-display">Transcribing your recording...</p>
+          <p className="text-xs text-[var(--text-muted)]">Using AI to convert speech to text</p>
+        </div>
       </div>
     );
   }
 
   // Review mode
   return (
-    <div className="flex flex-col gap-6 w-full max-w-lg animate-fade-in">
+    <div className="flex flex-col gap-6 w-full max-w-lg animate-slide-up">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
+        <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
           {transcript ? "Your Dream Narrative" : "Type Your Dream"}
         </h2>
         <p className="text-[var(--text-secondary)] text-sm">
@@ -190,7 +196,7 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
       </div>
 
       {micError && (
-        <div className="px-4 py-3 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)] text-sm text-center animate-fade-in">
+        <div className="px-4 py-3 rounded-xl bg-[var(--accent)]/8 border border-[var(--accent)]/15 text-[var(--accent)] text-sm text-center animate-fade-in">
           Microphone not available. You can type your dream instead.
         </div>
       )}
@@ -199,20 +205,20 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
         value={transcript}
         onChange={(e) => setTranscript(e.target.value)}
         placeholder="Describe your dream in as much detail as you can remember. What did you see? Who was there? What happened? How did it make you feel?"
-        className="w-full h-48 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-4 text-[var(--text-primary)] placeholder-[var(--text-muted)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 transition-all text-sm leading-relaxed"
+        className="w-full h-48 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-4 text-[var(--text-primary)] placeholder-[var(--text-muted)] resize-none focus:outline-none focus:ring-1 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]/20 transition-all text-sm leading-relaxed"
       />
 
       <div className="flex gap-3">
         <button
           onClick={() => { setMode("idle"); setTranscript(""); setRecordingTime(0); setMicError(false); }}
-          className="flex-1 py-3 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] transition-colors text-sm cursor-pointer"
+          className="flex-1 py-3 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:border-[var(--accent)]/10 transition-all text-sm cursor-pointer"
         >
           {micError ? "Try Mic Again" : "Re-record"}
         </button>
         <button
           onClick={handleSubmit}
           disabled={transcript.trim().length < 10}
-          className="flex-1 py-3 rounded-xl bg-[var(--accent)] text-white font-medium hover:bg-[var(--accent)]/90 transition-colors text-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          className="flex-1 py-3 rounded-xl btn-primary text-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
         >
           Analyze Dream
         </button>

@@ -9,12 +9,19 @@ interface DreamAnalysis {
     auditory?: string;
     tactile?: string;
     olfactory?: string;
+    proprioceptive?: string;
   };
   emotions?: { emotion: string; intensity: number }[];
+  somatic_response?: string;
+  nightmare_classification?: string;
+  core_threat?: string;
+  dream_distortions?: string[];
   themes?: string[];
   nightmare_intensity?: number;
+  recurrence_indicators?: string;
   waking_life_links?: string;
   turning_point?: string;
+  intervention_window?: string;
 }
 
 export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
@@ -23,7 +30,7 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
   return (
     <div className="w-full max-w-lg space-y-4 animate-slide-up">
       <div className="text-center space-y-2 mb-6">
-        <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
+        <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
           Dream Diary Entry
         </h2>
         <p className="text-[var(--text-secondary)] text-sm">
@@ -106,6 +113,49 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
             {analysis.sensory_details.olfactory && (
               <SenseCard label="Olfactory" value={analysis.sensory_details.olfactory} />
             )}
+            {analysis.sensory_details.proprioceptive && (
+              <SenseCard label="Body Sense" value={analysis.sensory_details.proprioceptive} />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Clinical Classification */}
+      {(analysis.nightmare_classification || analysis.core_threat) && (
+        <div className="glass rounded-xl p-4 border-l-2 border-[var(--accent)]">
+          <span className="text-xs font-medium text-[var(--accent)] uppercase tracking-wider block mb-3">Clinical Assessment</span>
+          {analysis.nightmare_classification && (
+            <div className="mb-2">
+              <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Classification</span>
+              <p className="text-sm text-[var(--text-secondary)]">
+                {analysis.nightmare_classification.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+              </p>
+            </div>
+          )}
+          {analysis.core_threat && (
+            <div>
+              <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Core Threat</span>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{analysis.core_threat}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Somatic Response */}
+      {analysis.somatic_response && (
+        <DiaryField icon="body" label="Body Response" value={analysis.somatic_response} />
+      )}
+
+      {/* Dream Distortions */}
+      {analysis.dream_distortions && analysis.dream_distortions.length > 0 && (
+        <div className="glass rounded-xl p-4">
+          <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider block mb-2">Dream Distortions</span>
+          <div className="flex flex-wrap gap-2">
+            {analysis.dream_distortions.map((d, i) => (
+              <span key={i} className="text-xs bg-[var(--accent-warm)]/10 text-[var(--accent-warm)] px-3 py-1.5 rounded-full border border-[var(--accent-warm)]/20">
+                {d}
+              </span>
+            ))}
           </div>
         </div>
       )}
@@ -159,6 +209,19 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
           </div>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{analysis.turning_point}</p>
         </div>
+      )}
+
+      {/* Intervention Window */}
+      {analysis.intervention_window && (
+        <div className="glass rounded-xl p-4 border-l-2 border-[var(--success)]">
+          <span className="text-xs font-medium text-[var(--success)] uppercase tracking-wider block mb-2">Rescripting Entry Point</span>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{analysis.intervention_window}</p>
+        </div>
+      )}
+
+      {/* Recurrence */}
+      {analysis.recurrence_indicators && (
+        <DiaryField icon="recurrence" label="Recurrence Pattern" value={analysis.recurrence_indicators} />
       )}
 
       {/* Waking Life Links */}

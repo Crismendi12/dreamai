@@ -77,28 +77,28 @@ export default function Home() {
     : 0;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+      <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent-warm)] flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent-warm)] flex items-center justify-center shadow-lg shadow-[var(--accent)]/10">
+            <svg className="w-4 h-4 text-[#080B14]" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 006.002-2.248z" />
             </svg>
           </div>
-          <span className="text-lg font-semibold tracking-tight">
+          <span className="text-lg font-display font-semibold tracking-tight">
             Dream<span className="text-[var(--accent)]">AI</span>
           </span>
         </div>
 
         {step !== "landing" && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {steps.map((s, i) => (
-              <div key={s} className="flex items-center gap-1">
-                <div className={`w-5 h-5 rounded-full text-[9px] font-medium flex items-center justify-center transition-all ${
+              <div key={s} className="flex items-center gap-1.5">
+                <div className={`w-5 h-5 rounded-full text-[9px] font-medium flex items-center justify-center transition-all duration-500 ${
                   i <= stepIndex
-                    ? "bg-[var(--accent)] text-white"
-                    : "bg-[var(--bg-card)] text-[var(--text-muted)]"
+                    ? "bg-[var(--accent)] text-[#080B14]"
+                    : "bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-subtle)]"
                 }`}>
                   {i < stepIndex ? (
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
@@ -108,11 +108,11 @@ export default function Home() {
                     i + 1
                   )}
                 </div>
-                <span className={`text-[10px] hidden sm:block ${
+                <span className={`text-[10px] hidden sm:block transition-colors duration-500 ${
                   i <= stepIndex ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
                 }`}>{s}</span>
                 {i < steps.length - 1 && (
-                  <div className={`w-4 h-px ${i < stepIndex ? "bg-[var(--accent)]" : "bg-[var(--border)]"}`} />
+                  <div className={`w-4 h-px transition-colors duration-500 ${i < stepIndex ? "bg-[var(--accent)]/50" : "bg-[var(--border-subtle)]"}`} />
                 )}
               </div>
             ))}
@@ -121,7 +121,7 @@ export default function Home() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12">
         {step === "landing" && <LandingView onStart={() => setStep("record")} />}
         {error && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-[var(--danger)]/10 border border-[var(--danger)]/20 text-[var(--danger)] text-sm text-center max-w-lg animate-fade-in">
@@ -130,20 +130,25 @@ export default function Home() {
         )}
         {step === "record" && <VoiceRecorder onTranscriptReady={handleTranscript} />}
         {step === "analyzing" && (
-          <div className="flex flex-col items-center gap-4 animate-fade-in">
-            <div className="w-10 h-10 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-            <p className="text-[var(--text-secondary)]">Analyzing your dream with AI...</p>
-            <p className="text-xs text-[var(--text-muted)]">Identifying patterns, emotions, and sensory details</p>
+          <div className="flex flex-col items-center gap-6 animate-fade-in">
+            <div className="relative w-12 h-12">
+              <div className="absolute inset-0 rounded-full border-2 border-[var(--accent)]/20" />
+              <div className="absolute inset-0 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+            </div>
+            <div className="text-center space-y-2">
+              <p className="text-[var(--text-primary)] font-display">Analyzing your dream...</p>
+              <p className="text-xs text-[var(--text-muted)]">Identifying patterns, emotions, and sensory details</p>
+            </div>
           </div>
         )}
         {step === "diary" && analysis && (
-          <div className="flex flex-col items-center gap-6 w-full">
+          <div className="flex flex-col items-center gap-8 w-full">
             <DreamDiary analysis={analysis as Record<string, unknown>} />
             <button
               onClick={() => setStep("followup")}
-              className="px-8 py-3 rounded-xl bg-[var(--accent)] text-white font-medium hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
+              className="btn-primary px-8 py-3 rounded-xl text-sm cursor-pointer"
             >
-              Continue -- Let's Go Deeper
+              Continue -- Let&apos;s Go Deeper
             </button>
           </div>
         )}
@@ -181,7 +186,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="px-6 py-4 border-t border-[var(--border)] text-center">
+      <footer className="relative z-10 px-6 py-4 border-t border-[var(--border-subtle)] text-center">
         <p className="text-xs text-[var(--text-muted)]">
           DreamAI uses AI-powered Image Rehearsal Therapy (IRT) to help transform nightmares.
           {" "}Not a substitute for professional mental health care.
@@ -193,54 +198,62 @@ export default function Home() {
 
 function LandingView({ onStart }: { onStart: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-10 max-w-xl text-center animate-fade-in">
-      <div className="relative">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-warm)] flex items-center justify-center">
-          <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 006.002-2.248z" />
-          </svg>
+    <div className="flex flex-col items-center gap-12 max-w-xl text-center animate-fade-in">
+      {/* Hero icon */}
+      <div className="relative animate-float">
+        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-[var(--accent)]/20 to-[var(--accent-cool)]/10 flex items-center justify-center border border-[var(--accent)]/15">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[var(--accent)]/30 to-[var(--accent-warm)]/20 flex items-center justify-center">
+            <svg className="w-10 h-10 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 006.002-2.248z" />
+            </svg>
+          </div>
         </div>
-        <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-warm)] opacity-10 blur-xl" />
+        <div className="absolute -inset-6 rounded-full bg-[var(--accent)]/5 blur-2xl" />
       </div>
 
-      <div className="space-y-4">
-        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
+      {/* Headline */}
+      <div className="space-y-5">
+        <h1 className="text-4xl sm:text-5xl font-display font-bold tracking-tight leading-[1.1]">
           Transform Your
           <br />
           <span className="bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] bg-clip-text text-transparent">
             Nightmares
           </span>
         </h1>
-        <p className="text-lg text-[var(--text-secondary)] leading-relaxed max-w-md mx-auto">
+        <p className="text-base text-[var(--text-secondary)] leading-relaxed max-w-md mx-auto">
           AI-powered Image Rehearsal Therapy that helps you take control of your dreams.
           Record, rescript, and rehearse your way to better sleep.
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-6 w-full max-w-sm">
-        <StatCard value="70%" label="Nightmare reduction" />
-        <StatCard value="7-10" label="Days to see change" />
-        <StatCard value="21min" label="Military suicide interval" />
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-8 w-full max-w-sm">
+        <StatCard value="70%" label="Nightmare reduction with IRT" />
+        <StatCard value="10" label="Days to lasting change" />
+        <StatCard value="90%" label="Maintain gains at 6 months" />
       </div>
 
+      {/* CTA */}
       <button
         onClick={onStart}
-        className="group px-10 py-4 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] text-white font-semibold text-lg hover:opacity-90 transition-all cursor-pointer"
+        className="group btn-primary px-12 py-4 rounded-xl text-base cursor-pointer"
       >
         Begin Your Session
         <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
       </button>
 
-      <div className="grid grid-cols-4 gap-4 w-full pt-4">
+      {/* Steps */}
+      <div className="grid grid-cols-4 gap-3 w-full pt-2">
         <StepCard step="1" title="Record" desc="Speak or type your dream" />
         <StepCard step="2" title="Analyze" desc="AI extracts patterns" />
         <StepCard step="3" title="Rescript" desc="Choose a new ending" />
         <StepCard step="4" title="Rehearse" desc="Watch before sleep" />
       </div>
 
-      <p className="text-xs text-[var(--text-muted)] max-w-sm">
-        Based on clinically validated Image Rehearsal Therapy protocols.
-        Developed in collaboration with Dr. Michael Breus, PhD -- The Sleep Doctor.
+      {/* Citation */}
+      <p className="text-[11px] text-[var(--text-muted)] max-w-sm leading-relaxed">
+        Based on Image Rehearsal Therapy protocols validated by Krakow & Zadra (2006) and Aurora et al. (2010).
+        In collaboration with Dr. Michael Breus, PhD -- The Sleep Doctor.
       </p>
     </div>
   );
@@ -248,21 +261,21 @@ function LandingView({ onStart }: { onStart: () => void }) {
 
 function StatCard({ value, label }: { value: string; label: string }) {
   return (
-    <div className="text-center">
-      <div className="text-2xl font-bold text-[var(--accent)]">{value}</div>
-      <div className="text-[10px] text-[var(--text-muted)] mt-1">{label}</div>
+    <div className="text-center space-y-1.5">
+      <div className="text-2xl font-display font-bold text-[var(--accent)]">{value}</div>
+      <div className="text-[10px] text-[var(--text-muted)] leading-tight">{label}</div>
     </div>
   );
 }
 
 function StepCard({ step, title, desc }: { step: string; title: string; desc: string }) {
   return (
-    <div className="glass rounded-xl p-3 text-center">
-      <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-xs font-bold flex items-center justify-center mx-auto mb-2">
+    <div className="glass rounded-xl p-3.5 text-center transition-all hover:border-[var(--accent)]/15">
+      <div className="w-7 h-7 rounded-full bg-[var(--accent)]/8 text-[var(--accent)] text-xs font-bold flex items-center justify-center mx-auto mb-2 border border-[var(--accent)]/15">
         {step}
       </div>
-      <h3 className="text-xs font-semibold text-[var(--text-primary)]">{title}</h3>
-      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{desc}</p>
+      <h3 className="text-xs font-semibold text-[var(--text-primary)] mb-0.5">{title}</h3>
+      <p className="text-[10px] text-[var(--text-muted)]">{desc}</p>
     </div>
   );
 }

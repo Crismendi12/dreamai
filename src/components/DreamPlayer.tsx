@@ -171,7 +171,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
         }
       `}</style>
       <div className="text-center space-y-1 mb-2">
-        <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
+        <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
           Your Rehearsal Experience
         </h2>
         <p className="text-[var(--text-secondary)] text-sm">

@@ -10,12 +10,21 @@ interface Scene {
   mood: string;
 }
 
+interface FalVideoResult {
+  video: { url: string; content_type: string; file_name: string; file_size: number };
+}
+
+export const maxDuration = 300; // 5 min max for video generation
+
 export async function POST(request: Request) {
   const { scenes, endingType } = await request.json();
 
   if (!scenes || !Array.isArray(scenes) || scenes.length === 0) {
     return Response.json({ error: "No scenes provided" }, { status: 400 });
   }
+
+  // Cap at 3 scenes to control costs (~$0.07/s per clip)
+  const cappedScenes = scenes.slice(0, 3);
 
   const moodCinema: Record<string, string> = {
     empowering:
@@ -45,45 +54,53 @@ export async function POST(request: Request) {
   };
 
   try {
-    // Submit all video jobs to fal queue (returns instantly with request IDs)
-    const submissions = await Promise.all(
-      scenes.map(async (scene: Scene, index: number) => {
+    // Kling 2.6 Pro: cinematic quality, $0.07/s (~$0.35 per 5s clip)
+    // v2/standard was deprecated (instant 0.02s failures). v2.6/pro works.
+    const results = await Promise.all(
+      cappedScenes.map(async (scene: Scene, index: number) => {
         const cinema = moodCinema[scene.mood] || moodCinema.calm;
         const camera = moodCamera[scene.mood] || moodCamera.calm;
         const tone = endingTone[endingType] || "";
 
         const prompt = [
-          "Cinematic dream sequence, first-person POV perspective, photorealistic, 4K film quality, film grain texture",
+          "First-person POV shot from inside the dreamer's eyes. The camera IS the dreamer's vision. Hands and arms partially visible at bottom of frame when relevant",
+          "Cinematic dream sequence, photorealistic, 4K film quality, subtle film grain, anamorphic lens",
           camera,
           cinema,
           tone,
           scene.visual_description,
-          "No text, no watermarks, no UI. Smooth continuous motion. Dreamlike cinematic quality, Terrence Malick style.",
+          "No third-person view, no external person visible as the dreamer, no over-the-shoulder shots. The viewer IS the dreamer looking out through their own eyes",
+          "Smooth continuous motion. Dreamlike cinematic quality, Emmanuel Lubezki cinematography style. No text, no watermarks, no UI elements",
         ].join(". ");
 
         try {
-          const { request_id } = await fal.queue.submit("fal-ai/kling-video/v2/master/text-to-video", {
+          const result = await fal.subscribe("fal-ai/kling-video/v2.6/pro/text-to-video", {
             input: {
               prompt,
               duration: "5",
               aspect_ratio: "16:9",
-              negative_prompt: "blur, distort, low quality, text, watermark, logo, cartoon, anime, ugly, deformed, glitch, artifact",
-              cfg_scale: 0.5,
+              negative_prompt: "third person view, external person, over the shoulder, back of head, full body shot, blur, distort, low quality, text, watermark, logo, cartoon, anime, ugly, deformed, glitch, artifact, static image",
             },
+            pollInterval: 5000,
           });
+
+          const data = result.data as FalVideoResult;
 
           return {
             scene_number: scene.scene_number || index + 1,
-            request_id,
+            video_url: data.video?.url || null,
             narration: scene.narration,
             duration_seconds: 10,
             mood: scene.mood,
             visual_description: scene.visual_description,
           };
-        } catch {
+        } catch (err) {
+          const error = err as { body?: { detail?: string }; message?: string };
+          console.error(`Scene ${index + 1} generation failed:`, error.message || error.body?.detail);
           return {
             scene_number: scene.scene_number || index + 1,
-            request_id: null,
+            video_url: null,
+            error: error.body?.detail || error.message || "Generation failed",
             narration: scene.narration,
             duration_seconds: 10,
             mood: scene.mood,
@@ -93,10 +110,10 @@ export async function POST(request: Request) {
       })
     );
 
-    return Response.json({ scenes: submissions });
+    return Response.json({ scenes: results });
   } catch (err) {
     return Response.json(
-      { error: (err as Error).message || "Failed to submit video jobs" },
+      { error: (err as Error).message || "Failed to generate videos" },
       { status: 503 }
     );
   }

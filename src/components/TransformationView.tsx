@@ -42,7 +42,7 @@ export default function TransformationView({ analysis, endingTitle }: Transforma
         <div
           className={`transition-all duration-1000 ${revealStage >= 1 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
         >
-          <h2 className="text-3xl font-bold text-[var(--text-primary)]">
+          <h2 className="text-3xl font-display font-bold text-[var(--text-primary)]">
             Your Transformation
           </h2>
           <p className="text-[var(--text-secondary)] mt-2">
