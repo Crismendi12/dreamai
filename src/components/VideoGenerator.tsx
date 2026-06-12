@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import DreamPlayer from "./DreamPlayer";
+import { Icon } from "@/lib/icons";
 
 interface Scene {
   scene_number: number;
@@ -14,6 +15,7 @@ interface Scene {
 interface GeneratedScene {
   scene_number: number;
   video_url: string | null;
+  image_url: string | null;
   narration: string;
   duration_seconds: number;
   mood: string;
@@ -77,50 +79,89 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
   // Generating phase -- show cinematic loading
   if (phase === "generating") {
     return (
-      <div className="w-full max-w-2xl space-y-8 animate-fade-in">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
-            Creating Your Dream Film
-          </h2>
-          <p className="text-[var(--text-secondary)] text-sm">
-            AI is generating {totalScenes} cinematic POV scenes with Kling 2.6
-          </p>
+      <div className="analysing animate-fade-in">
+        {/* Morphing orb hero */}
+        <div className="orb-stage">
+          <div className="orb-glow" />
+          <div className="orb" />
+          <div className="spark s1"><Icon name="spark" /></div>
+          <div className="spark s2"><Icon name="spark" /></div>
+          <div className="spark s3"><Icon name="spark" /></div>
         </div>
 
-        {/* Animated progress */}
-        <div className="space-y-3">
-          <div className="w-full h-2 bg-[var(--bg-card)] rounded-full overflow-hidden">
+        <h2 className="analyse-head">Creating Your Dream Film</h2>
+        <p className="subhead" style={{ marginTop: "-14px", marginBottom: "20px" }}>
+          AI is generating {totalScenes} cinematic POV scenes with Kling 2.6
+        </p>
+
+        {/* Decorative indeterminate progress track (fixed 60%, not real progress) */}
+        <div style={{ width: "100%", maxWidth: "360px" }}>
+          <div
+            style={{
+              width: "100%",
+              height: "3px",
+              borderRadius: "999px",
+              background: "var(--line)",
+              overflow: "hidden",
+            }}
+          >
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] animate-pulse"
-              style={{ width: "60%" }}
+              className="animate-pulse"
+              style={{
+                width: "60%",
+                height: "100%",
+                borderRadius: "999px",
+                background: "linear-gradient(90deg, var(--accent), var(--accent-l))",
+              }}
             />
           </div>
-          <p className="text-xs text-[var(--text-muted)] text-center">
+          <p
+            style={{
+              fontFamily: "var(--font-mono), var(--mono)",
+              fontSize: "12px",
+              color: "var(--faint)",
+              textAlign: "center",
+              marginTop: "10px",
+            }}
+          >
             Rendering scenes... {timeStr} elapsed
           </p>
         </div>
 
-        {/* Scene cards */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Per-scene status list */}
+        <div className="plan-steps" style={{ width: "100%", maxWidth: "360px", marginTop: "8px", textAlign: "left" }}>
           {scenes.map((s, i) => (
-            <div key={i} className="glass rounded-xl p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-[var(--text-muted)]">
-                  Scene {s.scene_number || i + 1}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
-                  <span className="text-xs text-[var(--accent)]">Rendering</span>
+            <div key={i} className="plan-row">
+              <div className="plan-ic"><Icon name="play" /></div>
+              <div style={{ flex: 1 }}>
+                <div className="plan-t">Scene {s.scene_number || i + 1}</div>
+                <div className="plan-s" style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                  <span
+                    className="animate-pulse"
+                    style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "999px",
+                      background: "var(--accent)",
+                      display: "inline-block",
+                    }}
+                  />
+                  <span style={{ color: "var(--accent)" }}>Rendering</span>
                 </div>
               </div>
-              <p className="text-xs text-[var(--text-secondary)] line-clamp-2">
-                {s.visual_description}
-              </p>
             </div>
           ))}
         </div>
 
-        <p className="text-xs text-[var(--text-muted)] text-center italic">
+        <p
+          style={{
+            fontSize: "12.5px",
+            color: "var(--faint)",
+            textAlign: "center",
+            fontStyle: "italic",
+            marginTop: "18px",
+          }}
+        >
           Each scene takes ~2 minutes to render. All {totalScenes} generate in parallel.
         </p>
       </div>
@@ -134,46 +175,52 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
 
   if (!hasVideos) {
     return (
-      <div className="flex flex-col items-center gap-6 animate-fade-in max-w-md text-center">
+      <div className="panel animate-fade-in" style={{ maxWidth: "440px", textAlign: "center" }}>
         {generationError ? (
-          <>
-            <div className="w-14 h-14 rounded-full bg-[var(--danger)]/10 flex items-center justify-center">
-              <svg className="w-7 h-7 text-[var(--danger)]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "18px" }}>
+            <div
+              style={{
+                width: "56px",
+                height: "56px",
+                borderRadius: "999px",
+                background: "rgba(192,57,43,0.1)",
+                color: "var(--danger)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon name="alert" size={28} />
             </div>
-            <div className="space-y-2">
-              <p className="text-[var(--text-primary)] font-medium">Video Generation Unavailable</p>
-              <p className="text-sm text-[var(--text-secondary)]">{generationError}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <p style={{ fontWeight: 600, color: "var(--text)" }}>Video Generation Unavailable</p>
+              <p style={{ fontSize: "14px", color: "var(--muted)" }}>{generationError}</p>
             </div>
             {generationError.includes("credits") || generationError.includes("balance") || generationError.includes("billing") ? (
               <a
                 href="https://fal.ai/dashboard/billing"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors"
+                className="btn btn--brand"
               >
                 Add Credits at fal.ai
+                <Icon name="arrowright" />
               </a>
             ) : (
-              <button
-                onClick={() => window.location.reload()}
-                className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
-              >
+              <button onClick={() => window.location.reload()} className="btn btn--brand">
+                <Icon name="refresh" />
                 Retry
               </button>
             )}
-          </>
+          </div>
         ) : (
-          <>
-            <p className="text-[var(--text-secondary)]">Video generation failed. Please try again.</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
-            >
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "18px" }}>
+            <p style={{ color: "var(--muted)" }}>Video generation failed. Please try again.</p>
+            <button onClick={() => window.location.reload()} className="btn btn--brand">
+              <Icon name="refresh" />
               Retry
             </button>
-          </>
+          </div>
         )}
       </div>
     );
@@ -182,16 +229,14 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
   return (
     <div className="space-y-6">
       <DreamPlayer
-        scenes={sortedScenes}
+        scenes={sortedScenes.map((s) => ({ ...s, image_url: null }))}
         totalDuration={totalDuration}
         endingTitle={endingTitle}
       />
       <div className="flex justify-center">
-        <button
-          onClick={onComplete}
-          className="px-8 py-3 rounded-xl btn-primary cursor-pointer"
-        >
+        <button onClick={onComplete} className="btn btn--brand">
           Continue to Your Healing Plan
+          <Icon name="arrowright" />
         </button>
       </div>
     </div>

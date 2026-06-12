@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Icon } from "@/lib/icons";
 
 interface FollowUpChatProps {
   transcript: string;
@@ -14,10 +15,6 @@ export default function FollowUpChat({ transcript, analysis, onComplete }: Follo
   const [currentAnswers, setCurrentAnswers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [round, setRound] = useState(1);
-
-  useEffect(() => {
-    fetchQuestions([]);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchQuestions = async (prevAnswers: { q: string; a: string }[]) => {
     setLoading(true);
@@ -41,6 +38,11 @@ export default function FollowUpChat({ transcript, analysis, onComplete }: Follo
     setLoading(false);
   };
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchQuestions([]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSubmitAnswers = () => {
     const newAnswers = questions.map((q, i) => ({
       q,
@@ -61,9 +63,15 @@ export default function FollowUpChat({ transcript, analysis, onComplete }: Follo
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center gap-4 animate-fade-in">
-        <div className="w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-        <p className="text-[var(--text-secondary)] text-sm">
+      <div className="flex flex-col items-center text-center animate-fade-in">
+        <div className="orb-stage">
+          <div className="orb-glow" />
+          <div className="orb" />
+          <span className="spark s1"><Icon name="spark" /></span>
+          <span className="spark s2"><Icon name="sparkline" /></span>
+          <span className="spark s3"><Icon name="spark" /></span>
+        </div>
+        <p className="analyse-head">
           {round === 1 ? "Analyzing your dream..." : "Preparing deeper questions..."}
         </p>
       </div>
@@ -71,12 +79,25 @@ export default function FollowUpChat({ transcript, analysis, onComplete }: Follo
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-lg animate-slide-up">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
-          Let&apos;s Go Deeper
-        </h2>
-        <p className="text-[var(--text-secondary)] text-sm">
+    <div className="intake animate-slide-up">
+      {/* Round indicator */}
+      <div>
+        <div className="step-kicker">Round {round} of 2 &middot; Deepen</div>
+        <div className="intake-top" style={{ marginTop: "12px" }}>
+          <div className="progress-dots">
+            <span className={`pd${round > 1 ? " is-done" : round === 1 ? " is-active" : ""}`}>
+              <span className="pd-fill" />
+            </span>
+            <span className={`pd${round === 2 ? " is-active" : ""}`}>
+              <span className="pd-fill" />
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="step-q">Let&apos;s Go Deeper</h2>
+        <p className="step-hint">
           These details help us create a more vivid and personal experience for you.
           {round === 2 && " (Final round)"}
         </p>
@@ -84,22 +105,25 @@ export default function FollowUpChat({ transcript, analysis, onComplete }: Follo
 
       {/* Previous answers */}
       {answers.length > 0 && (
-        <div className="space-y-3 opacity-60">
+        <div className="carry opacity-60">
+          <div className="carry-label">
+            <Icon name="check" /> Captured so far
+          </div>
           {answers.map((a, i) => (
-            <div key={i} className="glass rounded-lg p-3">
-              <p className="text-xs text-[var(--accent)] font-medium mb-1">{a.q}</p>
-              <p className="text-sm text-[var(--text-secondary)]">{a.a}</p>
+            <div key={i} className="carry-row">
+              <span className="carry-k">{a.q}</span>
+              <span className="carry-v">{a.a}</span>
             </div>
           ))}
         </div>
       )}
 
       {/* Current questions */}
-      <div className="space-y-4">
+      <div className="flex flex-col gap-6">
         {questions.map((q, i) => (
-          <div key={`${round}-${i}`} className="space-y-2 animate-fade-in" style={{ animationDelay: `${i * 150}ms` }}>
-            <label className="text-sm font-medium text-[var(--accent)]">
-              {q}
+          <div key={`${round}-${i}`} className="animate-fade-in" style={{ animationDelay: `${i * 150}ms` }}>
+            <label className="sg-label">
+              <Icon name="quote" /> {q}
             </label>
             <textarea
               value={currentAnswers[i] || ""}
@@ -109,25 +133,25 @@ export default function FollowUpChat({ transcript, analysis, onComplete }: Follo
                 setCurrentAnswers(updated);
               }}
               placeholder="Describe what you remember..."
-              className="w-full h-20 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-3 text-[var(--text-primary)] placeholder-[var(--text-muted)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 transition-all text-sm"
+              className="gg-field w-full resize-none"
+              style={{ minHeight: "88px", alignItems: "flex-start" }}
             />
           </div>
         ))}
       </div>
 
-      <div className="flex gap-3">
-        <button
-          onClick={() => onComplete(answers)}
-          className="flex-1 py-3 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] transition-colors text-sm cursor-pointer"
-        >
+      <div className="intake-actions">
+        <button onClick={() => onComplete(answers)} className="linklike">
           Skip to Rescripting
         </button>
         <button
           onClick={handleSubmitAnswers}
           disabled={!allAnswered}
-          className="flex-1 py-3 rounded-xl bg-[var(--accent)] text-white font-medium hover:bg-[var(--accent)]/90 transition-colors text-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          className="btn btn--brand"
+          style={{ opacity: !allAnswered ? 0.3 : 1, cursor: !allAnswered ? "not-allowed" : "pointer" }}
         >
           {round >= 2 ? "Continue to Rescripting" : "Submit & Next"}
+          <Icon name="arrowright" />
         </button>
       </div>
     </div>
