@@ -47,7 +47,7 @@ const ANALYZE_STEPS: { ic: IconName; t: string }[] = [
   { ic: "list", t: "Structuring your diary entry" },
 ];
 // Peaceful cadence for stepping through the analysis stages while we wait.
-const ANALYZE_STEP_MS = 850;
+const ANALYZE_STEP_MS = 1200;
 
 export default function Home() {
   const [step, setStep] = useState<Step>("landing");

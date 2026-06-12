@@ -193,11 +193,11 @@ h1, h2, h3, .font-display {
 @keyframes twinkle { 0%,100% { opacity: 0; transform: scale(0.6) rotate(0deg); } 50% { opacity: 1; transform: scale(1) rotate(20deg); } }
 .analyse-head { font-family: var(--font-display), var(--serif); font-size: clamp(24px,4.5vw,30px); letter-spacing:-0.02em; margin: 4px 0 22px; }
 .live-steps { width: 100%; max-width: 300px; margin: 0 auto; display:flex; flex-direction:column; gap: 4px; }
-.live-row { display:flex; align-items:center; gap: 12px; padding: 11px 4px; text-align:left; opacity: 0.35; transition: opacity 360ms ease; }
+.live-row { display:flex; align-items:center; gap: 12px; padding: 11px 4px; text-align:left; opacity: 0.35; transition: opacity 600ms ease; }
 .live-row.on { opacity: 1; }
 .live-row.done { opacity: 0.85; }
-.live-ic { width: 26px; height: 26px; border-radius: 999px; flex:none; display:flex; align-items:center; justify-content:center; background: var(--accent-soft); color: var(--accent); }
-.live-row.done .live-ic { background: var(--green); color:#fff; }
+.live-ic { width: 26px; height: 26px; border-radius: 999px; flex:none; display:flex; align-items:center; justify-content:center; background: var(--accent-soft); color: var(--accent); transition: background 500ms ease, color 500ms ease; }
+.live-row.done .live-ic { background: var(--accent); color:#fff; }
 .live-ic svg { width: 14px; height: 14px; }
 .live-spin { width: 14px; height: 14px; border: 2px solid var(--accent-tint-strong); border-top-color: var(--accent); border-radius: 999px; animation: rot 0.7s linear infinite; }
 @keyframes rot { to { transform: rotate(360deg); } }

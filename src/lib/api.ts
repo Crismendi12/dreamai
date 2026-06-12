@@ -160,7 +160,7 @@ function mockFor(path: string, init?: RequestInit): { body: unknown; ms: number 
     return { body: { text: DEMO_TRANSCRIPT }, ms: 800 };
   }
   if (path.includes("/api/analyze")) {
-    return { body: { analysis: DEMO_ANALYSIS }, ms: 3600 };
+    return { body: { analysis: DEMO_ANALYSIS }, ms: 4800 };
   }
   if (path.includes("/api/followup")) {
     let round1 = true;

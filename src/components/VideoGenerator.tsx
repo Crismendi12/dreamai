@@ -44,7 +44,7 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
   const [dataReady, setDataReady] = useState(false);
 
   const totalScenes = scenes.length;
-  const STEP_MS = 1500;
+  const STEP_MS = 2000;
 
   // Timer for user feedback
   useEffect(() => {
