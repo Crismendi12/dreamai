@@ -10,8 +10,23 @@ import HabitTracker from "@/components/HabitTracker";
 import TransformationView from "@/components/TransformationView";
 import { Icon, type IconName } from "@/lib/icons";
 import { apiFetch } from "@/lib/api";
+import SignInScreen from "@/components/SignInScreen";
+import Dashboard from "@/components/Dashboard";
+import DreamEntryView from "@/components/DreamEntryView";
+import Profile from "@/components/Profile";
+import type { DreamEntry } from "@/lib/dashboard-data";
 
-type Step = "landing" | "record" | "analyzing" | "diary" | "followup" | "rescript" | "video" | "tracker" | "transformation";
+type Step = "landing" | "dashboard" | "entry" | "profile" | "signin" | "record" | "analyzing" | "diary" | "followup" | "rescript" | "video" | "tracker" | "transformation";
+type NavTab = "home" | "journal" | "plan" | "profile";
+
+const NAV_TABS: { id: NavTab; label: string; icon: IconName }[] = [
+  { id: "home", label: "Home", icon: "home" },
+  { id: "journal", label: "Journal", icon: "bookOpen" },
+  { id: "plan", label: "Plan", icon: "target" },
+  { id: "profile", label: "Profile", icon: "user" },
+];
+// Dashboard section to scroll to per tab (profile is its own step, no section).
+const TAB_SECTION: Record<NavTab, string> = { home: "", journal: "dash-journal", plan: "dash-plan", profile: "" };
 
 interface SelectedEnding {
   title: string;
@@ -41,6 +56,11 @@ export default function Home() {
   const [followUpAnswers, setFollowUpAnswers] = useState<{ q: string; a: string }[]>([]);
   const [selectedEnding, setSelectedEnding] = useState<SelectedEnding | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // sign-in gate (mocked) + home-base navigation
+  const [signedIn, setSignedIn] = useState(false);
+  const [pendingEnding, setPendingEnding] = useState<SelectedEnding | null>(null);
+  const [activeTab, setActiveTab] = useState<NavTab>("home");
+  const [selectedEntry, setSelectedEntry] = useState<DreamEntry | null>(null);
 
   const handleTranscript = async (text: string) => {
     setTranscript(text);
@@ -72,9 +92,27 @@ export default function Home() {
     setStep("rescript");
   };
 
+  // Generating a rehearsal film requires sign-in (mocked). If not signed in, hold
+  // the chosen ending and show the sign-in SCREEN; resume on success.
   const handleEndingSelected = (ending: SelectedEnding) => {
+    if (!signedIn) {
+      setPendingEnding(ending);
+      setStep("signin");
+      return;
+    }
     setSelectedEnding(ending);
     setStep("video");
+  };
+
+  const completeSignIn = () => {
+    setSignedIn(true);
+    if (pendingEnding) {
+      setSelectedEnding(pendingEnding);
+      setPendingEnding(null);
+      setStep("video");
+    } else {
+      openDashboard("home");
+    }
   };
 
   const resetToHome = () => {
@@ -86,27 +124,65 @@ export default function Home() {
     setError(null);
   };
 
+  const openDashboard = (tab: NavTab = "home") => {
+    setActiveTab(tab);
+    setStep("dashboard");
+    const section = TAB_SECTION[tab];
+    setTimeout(() => {
+      if (!section) window.scrollTo({ top: 0, behavior: "smooth" });
+      else document.getElementById(section)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 70);
+  };
+
+  // Nav destination router: profile is its own screen; the rest live on the dashboard.
+  const goTab = (tab: NavTab) => {
+    if (tab === "profile") {
+      setActiveTab("profile");
+      setStep("profile");
+      setTimeout(() => window.scrollTo({ top: 0 }), 0);
+      return;
+    }
+    openDashboard(tab);
+  };
+
+  const openEntry = (entry: DreamEntry) => {
+    setSelectedEntry(entry);
+    setStep("entry");
+    setTimeout(() => window.scrollTo({ top: 0 }), 0);
+  };
+
+  const showNav = step === "dashboard" || step === "entry" || step === "profile";
+  const handleLogo = () => (showNav ? openDashboard("home") : resetToHome());
+
   const steps = ["Record", "Analyze", "Deepen", "Rescript", "Watch", "Heal"];
   const stepIndex = step === "landing" ? -1
     : step === "record" ? 0
     : step === "analyzing" || step === "diary" ? 1
     : step === "followup" ? 2
     : step === "rescript" ? 3
-    : step === "video" ? 4
+    : step === "signin" || step === "video" ? 4
     : step === "tracker" || step === "transformation" ? 5
     : 0;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-[100dvh] flex flex-col">
       {/* Header */}
       <header
         className="flex items-center justify-between gap-4 px-6 py-4"
-        style={{ borderBottom: "1px solid var(--line)", background: "rgba(250,250,250,0.92)", backdropFilter: "blur(8px)" }}
+        style={{
+          borderBottom: "1px solid var(--line)",
+          background: "rgba(250,250,250,0.92)",
+          backdropFilter: "blur(8px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 30,
+          paddingTop: "calc(1rem + env(safe-area-inset-top))",
+        }}
       >
         <button
           type="button"
-          onClick={resetToHome}
-          aria-label="DreamAI — back to start"
+          onClick={handleLogo}
+          aria-label="DreamAI — home"
           className="flex items-center gap-2.5"
           style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
         >
@@ -121,7 +197,39 @@ export default function Home() {
           </span>
         </button>
 
-        {step !== "landing" && (
+        {/* Home-base: desktop top nav (mobile uses the bottom tab bar) */}
+        {showNav && (
+          <nav className="topnav" aria-label="Primary">
+            {NAV_TABS.filter((t) => t.id !== "profile").map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`topnav-item ${activeTab === t.id ? "is-active" : ""}`}
+                aria-current={activeTab === t.id ? "page" : undefined}
+                onClick={() => goTab(t.id)}
+              >
+                <Icon name={t.icon} size={17} />
+                <span>{t.label}</span>
+              </button>
+            ))}
+            <button type="button" className="btn btn--brand" style={{ height: 40, padding: "0 16px", fontSize: 14 }} onClick={() => setStep("record")}>
+              <Icon name="plus" size={18} />
+              Record a dream
+            </button>
+            <button
+              type="button"
+              className="topnav-avatar"
+              aria-label="Profile"
+              onClick={() => goTab("profile")}
+              style={{ cursor: "pointer", border: activeTab === "profile" ? "2px solid var(--accent)" : "none" }}
+            >
+              <Icon name="user" size={16} />
+            </button>
+          </nav>
+        )}
+
+        {/* Focused session: progress stepper */}
+        {!showNav && step !== "landing" && (
           <div className="flex items-center gap-3">
             <span className="step-kicker hidden sm:block">{steps[stepIndex] ?? ""}</span>
             <div className="progress-dots" style={{ maxWidth: 220, minWidth: 140 }}>
@@ -136,7 +244,7 @@ export default function Home() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+      <main className={`flex-1 flex flex-col items-center px-6 py-12 ${showNav ? "justify-start has-tabbar" : "justify-center"}`}>
         {step === "landing" && <LandingView onStart={() => setStep("record")} />}
         {error && (
           <div className="mb-5 w-full max-w-lg animate-fade-in">
@@ -148,6 +256,16 @@ export default function Home() {
               <span>{error}</span>
             </div>
           </div>
+        )}
+        {step === "dashboard" && (
+          <Dashboard
+            onRecordNew={() => setStep("record")}
+            onOpenPlan={() => setStep("tracker")}
+            onOpenEntry={openEntry}
+          />
+        )}
+        {step === "entry" && selectedEntry && (
+          <DreamEntryView entry={selectedEntry} onBack={() => openDashboard("journal")} />
         )}
         {step === "record" && <VoiceRecorder onTranscriptReady={handleTranscript} />}
         {step === "analyzing" && <AnalyzingView />}
@@ -183,7 +301,7 @@ export default function Home() {
           />
         )}
         {step === "tracker" && (
-          <HabitTracker onComplete={() => setStep("transformation")} />
+          <HabitTracker onComplete={() => setStep("transformation")} onOpenJournal={() => openDashboard("home")} />
         )}
         {step === "transformation" && analysis && (
           <TransformationView
@@ -191,16 +309,41 @@ export default function Home() {
             endingTitle={selectedEnding?.title || "Your New Ending"}
           />
         )}
+        {step === "signin" && (
+          <SignInScreen onSignIn={completeSignIn} onBack={() => setStep("rescript")} />
+        )}
+        {step === "profile" && <Profile onSignOut={resetToHome} />}
       </main>
 
-      {/* Footer */}
-      <footer className="px-6 py-4 text-center" style={{ borderTop: "1px solid var(--line)" }}>
-        <p style={{ fontSize: 12, color: "var(--faint)", lineHeight: 1.5 }}>
-          DreamAI uses AI-powered Image Rehearsal Therapy (IRT) to help transform nightmares.
-          {" "}In collaboration with Dr. Michael Breus, PhD.
-          {" "}Not a substitute for professional mental health care.
-        </p>
-      </footer>
+      {/* Footer — hidden on the home base (dashboard/entry/profile); the disclaimer
+          lives at the bottom of Profile there so the hub stays uncluttered. */}
+      {!showNav && (
+        <footer className="px-6 py-4 text-center" style={{ borderTop: "1px solid var(--line)" }}>
+          <p style={{ fontSize: 12, color: "var(--faint)", lineHeight: 1.5 }}>
+            DreamAI uses AI-powered Image Rehearsal Therapy (IRT) to help transform nightmares.
+            {" "}In collaboration with Dr. Michael Breus, PhD.
+            {" "}Not a substitute for professional mental health care.
+          </p>
+        </footer>
+      )}
+
+      {/* Home-base mobile bottom tab bar (Instagram/TikTok style) */}
+      {showNav && (
+        <nav className="tabbar" aria-label="Primary">
+          {NAV_TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`tabitem ${activeTab === t.id ? "is-active" : ""}`}
+              aria-current={activeTab === t.id ? "page" : undefined}
+              onClick={() => goTab(t.id)}
+            >
+              <span style={{ display: "flex" }}><Icon name={t.icon} size={22} /></span>
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }

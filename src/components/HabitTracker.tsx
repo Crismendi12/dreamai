@@ -2,47 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Icon, type IconName } from "@/lib/icons";
+import { STORAGE_KEY, TOTAL_DAYS, getStoredData, getDayNumber, type TrackerData } from "@/lib/tracker";
 
 interface HabitTrackerProps {
   onComplete: () => void;
+  onOpenJournal: () => void;
 }
 
-const TOTAL_DAYS = 10;
-const STORAGE_KEY = "dreamai-habit-tracker";
-
-interface TrackerData {
-  startDate: string;
-  completedDays: number[];
-  streak: number;
-}
-
-function getStoredData(): TrackerData {
-  if (typeof window === "undefined") return { startDate: "", completedDays: [], streak: 0 };
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      // ignore
-    }
-  }
-  const data: TrackerData = {
-    startDate: new Date().toISOString().split("T")[0],
-    completedDays: [],
-    streak: 0,
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  return data;
-}
-
-function getDayNumber(startDate: string): number {
-  const start = new Date(startDate);
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-  return Math.min(diff + 1, TOTAL_DAYS);
-}
-
-export default function HabitTracker({ onComplete }: HabitTrackerProps) {
+export default function HabitTracker({ onComplete, onOpenJournal }: HabitTrackerProps) {
   const [data, setData] = useState<TrackerData>({ startDate: "", completedDays: [], streak: 0 });
   const [todayDay, setTodayDay] = useState(1);
   const [justCompleted, setJustCompleted] = useState(false);
@@ -126,7 +93,7 @@ export default function HabitTracker({ onComplete }: HabitTrackerProps) {
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-5 gap-2 sm:gap-3">
         {Array.from({ length: TOTAL_DAYS }, (_, i) => i + 1).map((day) => {
           const isCompleted = data.completedDays.includes(day);
           const isToday = day === todayDay;
@@ -136,7 +103,7 @@ export default function HabitTracker({ onComplete }: HabitTrackerProps) {
           return (
             <div
               key={day}
-              className={`relative rounded-xl p-3 text-center transition-all border ${
+              className={`relative rounded-xl p-2 sm:p-3 text-center transition-all border ${
                 isCompleted
                   ? "bg-[var(--green-soft)] border-[var(--green)]/30"
                   : isToday
@@ -234,19 +201,24 @@ export default function HabitTracker({ onComplete }: HabitTrackerProps) {
               ? "New neural pathways are forming. Keep building this momentum."
               : "Great start. Consistency is the key to rewiring your dreams."}
           </p>
-          {completedCount >= TOTAL_DAYS && (
-            <button
-              onClick={onComplete}
-              className="btn btn--ghost mt-5"
-              style={{ position: "relative", zIndex: 1 }}
-            >
-              View Your Transformation
-              <Icon name="arrowright" />
+          <div
+            className="flex flex-col items-center gap-2.5 mt-5"
+            style={{ position: "relative", zIndex: 1 }}
+          >
+            <button onClick={onOpenJournal} className="btn btn--ghost">
+              <Icon name="bookOpen" />
+              Take me to my journal
             </button>
-          )}
+            {completedCount >= TOTAL_DAYS && (
+              <button onClick={onComplete} className="btn btn--ghost">
+                View Your Transformation
+                <Icon name="arrowright" />
+              </button>
+            )}
+          </div>
         </div>
       ) : todayCompleted ? (
-        <div className="panel text-center space-y-2">
+        <div className="panel text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-[var(--green)]">
             <Icon name="shieldcheck" />
             <h3 className="text-lg font-semibold text-[var(--green)]">
@@ -256,6 +228,10 @@ export default function HabitTracker({ onComplete }: HabitTrackerProps) {
           <p className="text-sm text-[var(--muted)]">
             Come back tomorrow night for your next rehearsal.
           </p>
+          <button onClick={onOpenJournal} className="btn btn--brand">
+            <Icon name="bookOpen" />
+            Take me to my journal
+          </button>
         </div>
       ) : (
         <div className="panel text-center space-y-3">

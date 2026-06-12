@@ -61,7 +61,7 @@ export default function TransformationView({ analysis, endingTitle }: Transforma
             Nightmare Distress Level
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6">
             {/* Before */}
             <div className="text-center space-y-3">
               <span className="block text-xs text-[var(--faint)]">Before IRT</span>
@@ -197,7 +197,7 @@ export default function TransformationView({ analysis, endingTitle }: Transforma
             The Science Behind Your Healing
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-[var(--accent)] font-[family-name:var(--font-mono)]">70%</div>
               <div className="text-[10px] text-[var(--faint)] mt-1">Average nightmare reduction with IRT</div>

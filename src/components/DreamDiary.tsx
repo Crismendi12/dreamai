@@ -30,7 +30,7 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
   if (!analysis || typeof analysis === "string") return null;
 
   return (
-    <div className="w-full max-w-lg space-y-4 animate-slide-up">
+    <div className="dream-diary w-full max-w-lg space-y-4 animate-slide-up">
       <div className="text-center space-y-2 mb-6">
         <h2 className="serif-hero" style={{ fontSize: "clamp(28px, 5vw, 36px)" }}>
           Dream Diary Entry
@@ -40,11 +40,97 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
         </p>
       </div>
 
-      {/* Intensity bar */}
+      {/* 1. Narrative — the story, reflected back first */}
+      {analysis.narrative && (
+        <DiaryField icon="narrative" label="Dream Narrative" value={analysis.narrative} />
+      )}
+
+      {/* 2. Setting */}
+      {analysis.setting && (
+        <DiaryField icon="location" label="Setting" value={analysis.setting} />
+      )}
+
+      {/* 3. Characters */}
+      {analysis.characters && analysis.characters.length > 0 && (
+        <div className="panel">
+          <div className="panel-label dd-section-label flex items-center gap-2">
+            <Icon name="moon" size={13} style={{ color: "var(--accent)" }} />
+            Characters
+          </div>
+          <div className="pills">
+            {analysis.characters.map((c, i) => (
+              <span key={i} className="pill">{c}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 4. Sensory Details */}
+      {analysis.sensory_details && (
+        <div className="panel">
+          <div className="panel-label dd-section-label flex items-center gap-2">
+            <Icon name="sparkline" size={13} style={{ color: "var(--accent)" }} />
+            Sensory Details
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {analysis.sensory_details.visual && (
+              <SenseCard label="Visual" value={analysis.sensory_details.visual} />
+            )}
+            {analysis.sensory_details.auditory && (
+              <SenseCard label="Auditory" value={analysis.sensory_details.auditory} />
+            )}
+            {analysis.sensory_details.tactile && (
+              <SenseCard label="Tactile" value={analysis.sensory_details.tactile} />
+            )}
+            {analysis.sensory_details.olfactory && (
+              <SenseCard label="Olfactory" value={analysis.sensory_details.olfactory} />
+            )}
+            {analysis.sensory_details.proprioceptive && (
+              <SenseCard label="Body Sense" value={analysis.sensory_details.proprioceptive} />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 5. Emotions */}
+      {analysis.emotions && analysis.emotions.length > 0 && (
+        <div className="panel">
+          <div className="panel-label dd-section-label flex items-center gap-2">
+            <Icon name="brain" size={13} style={{ color: "var(--accent)" }} />
+            Emotions
+          </div>
+          <div className="space-y-2">
+            {analysis.emotions.map((e, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="text-sm w-20 sm:w-28 shrink-0" style={{ color: "var(--text)" }}>{e.emotion}</span>
+                <div className="flex-1 min-w-0 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--line)" }}>
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${e.intensity * 10}%`, background: "var(--accent)" }}
+                  />
+                </div>
+                <span
+                  className="w-6 text-right"
+                  style={{ fontFamily: "var(--font-mono), var(--mono)", fontSize: "12px", color: "var(--faint)" }}
+                >
+                  {e.intensity}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 6. Body Response */}
+      {analysis.somatic_response && (
+        <DiaryField icon="body" label="Body Response" value={analysis.somatic_response} />
+      )}
+
+      {/* 7. Distress Level — the summarizing intensity gauge */}
       {analysis.nightmare_intensity !== undefined && (
         <div className="panel">
           <div className="flex justify-between items-center mb-2">
-            <span className="panel-label" style={{ marginBottom: 0 }}>Distress Level</span>
+            <span className="panel-label dd-section-label" style={{ marginBottom: 0 }}>Distress Level</span>
             <span
               style={{
                 fontFamily: "var(--font-mono), var(--mono)",
@@ -73,88 +159,10 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
         </div>
       )}
 
-      {/* Setting */}
-      {analysis.setting && (
-        <DiaryField icon="location" label="Setting" value={analysis.setting} />
-      )}
-
-      {/* Narrative */}
-      {analysis.narrative && (
-        <DiaryField icon="narrative" label="Dream Narrative" value={analysis.narrative} />
-      )}
-
-      {/* Characters */}
-      {analysis.characters && analysis.characters.length > 0 && (
-        <div className="panel">
-          <div className="panel-label flex items-center gap-2">
-            <Icon name="moon" size={13} style={{ color: "var(--accent)" }} />
-            Characters
-          </div>
-          <div className="pills">
-            {analysis.characters.map((c, i) => (
-              <span key={i} className="pill">{c}</span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Sensory Details */}
-      {analysis.sensory_details && (
-        <div className="panel">
-          <div className="panel-label flex items-center gap-2">
-            <Icon name="sparkline" size={13} style={{ color: "var(--accent)" }} />
-            Sensory Details
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {analysis.sensory_details.visual && (
-              <SenseCard label="Visual" value={analysis.sensory_details.visual} />
-            )}
-            {analysis.sensory_details.auditory && (
-              <SenseCard label="Auditory" value={analysis.sensory_details.auditory} />
-            )}
-            {analysis.sensory_details.tactile && (
-              <SenseCard label="Tactile" value={analysis.sensory_details.tactile} />
-            )}
-            {analysis.sensory_details.olfactory && (
-              <SenseCard label="Olfactory" value={analysis.sensory_details.olfactory} />
-            )}
-            {analysis.sensory_details.proprioceptive && (
-              <SenseCard label="Body Sense" value={analysis.sensory_details.proprioceptive} />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Clinical Classification */}
-      {(analysis.nightmare_classification || analysis.core_threat) && (
-        <div className="panel" style={{ borderLeft: "2px solid var(--accent)" }}>
-          <div className="panel-label" style={{ color: "var(--accent)" }}>Clinical Assessment</div>
-          {analysis.nightmare_classification && (
-            <div className="mb-2">
-              <span className="panel-label" style={{ marginBottom: 0 }}>Classification</span>
-              <p className="text-sm" style={{ color: "var(--muted)" }}>
-                {analysis.nightmare_classification.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
-              </p>
-            </div>
-          )}
-          {analysis.core_threat && (
-            <div>
-              <span className="panel-label" style={{ marginBottom: 0 }}>Core Threat</span>
-              <p className="text-sm leading-relaxed" style={{ color: "var(--muted)" }}>{analysis.core_threat}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Somatic Response */}
-      {analysis.somatic_response && (
-        <DiaryField icon="body" label="Body Response" value={analysis.somatic_response} />
-      )}
-
-      {/* Dream Distortions */}
+      {/* 8. Dream Distortions */}
       {analysis.dream_distortions && analysis.dream_distortions.length > 0 && (
         <div className="panel">
-          <div className="panel-label">Dream Distortions</div>
+          <div className="panel-label dd-section-label">Dream Distortions</div>
           <div className="pills">
             {analysis.dream_distortions.map((d, i) => (
               <span
@@ -173,39 +181,10 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
         </div>
       )}
 
-      {/* Emotions */}
-      {analysis.emotions && analysis.emotions.length > 0 && (
-        <div className="panel">
-          <div className="panel-label flex items-center gap-2">
-            <Icon name="brain" size={13} style={{ color: "var(--accent)" }} />
-            Emotions
-          </div>
-          <div className="space-y-2">
-            {analysis.emotions.map((e, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-sm w-28 shrink-0" style={{ color: "var(--text)" }}>{e.emotion}</span>
-                <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--line)" }}>
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${e.intensity * 10}%`, background: "var(--accent)" }}
-                  />
-                </div>
-                <span
-                  className="w-6 text-right"
-                  style={{ fontFamily: "var(--font-mono), var(--mono)", fontSize: "12px", color: "var(--faint)" }}
-                >
-                  {e.intensity}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Themes */}
+      {/* 9. Themes */}
       {analysis.themes && analysis.themes.length > 0 && (
         <div className="panel">
-          <div className="panel-label flex items-center gap-2">
+          <div className="panel-label dd-section-label flex items-center gap-2">
             <Icon name="list" size={13} style={{ color: "var(--accent)" }} />
             Themes
           </div>
@@ -227,30 +206,51 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
         </div>
       )}
 
-      {/* Turning Point */}
-      {analysis.turning_point && (
-        <div className="panel" style={{ borderLeft: "2px solid var(--danger)" }}>
-          <div className="panel-label" style={{ color: "var(--danger)" }}>Critical Turning Point</div>
-          <p className="text-sm leading-relaxed" style={{ color: "var(--muted)" }}>{analysis.turning_point}</p>
-        </div>
-      )}
-
-      {/* Intervention Window */}
-      {analysis.intervention_window && (
-        <div className="panel" style={{ borderLeft: "2px solid var(--green)" }}>
-          <div className="panel-label" style={{ color: "var(--green)" }}>Rescripting Entry Point</div>
-          <p className="text-sm leading-relaxed" style={{ color: "var(--muted)" }}>{analysis.intervention_window}</p>
-        </div>
-      )}
-
-      {/* Recurrence */}
+      {/* 10. Recurrence Pattern */}
       {analysis.recurrence_indicators && (
         <DiaryField icon="recurrence" label="Recurrence Pattern" value={analysis.recurrence_indicators} />
       )}
 
-      {/* Waking Life Links */}
+      {/* 11. Waking Life Connections */}
       {analysis.waking_life_links && (
         <DiaryField icon="link" label="Waking Life Connections" value={analysis.waking_life_links} />
+      )}
+
+      {/* 12. Clinical Assessment */}
+      {(analysis.nightmare_classification || analysis.core_threat) && (
+        <div className="panel" style={{ borderLeft: "2px solid var(--accent)" }}>
+          <div className="panel-label dd-section-label" style={{ color: "var(--accent)" }}>Clinical Assessment</div>
+          {analysis.nightmare_classification && (
+            <div className="mb-2">
+              <span className="panel-label" style={{ marginBottom: 0 }}>Classification</span>
+              <p className="text-sm" style={{ color: "var(--muted)" }}>
+                {analysis.nightmare_classification.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+              </p>
+            </div>
+          )}
+          {analysis.core_threat && (
+            <div>
+              <span className="panel-label" style={{ marginBottom: 0 }}>Core Threat</span>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--muted)" }}>{analysis.core_threat}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 13. Critical Turning Point */}
+      {analysis.turning_point && (
+        <div className="panel" style={{ borderLeft: "2px solid var(--danger)" }}>
+          <div className="panel-label dd-section-label" style={{ color: "var(--danger)" }}>Critical Turning Point</div>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--muted)" }}>{analysis.turning_point}</p>
+        </div>
+      )}
+
+      {/* 14. Rescripting Entry Point — bridges into "Let's Go Deeper" */}
+      {analysis.intervention_window && (
+        <div className="panel" style={{ borderLeft: "2px solid var(--green)" }}>
+          <div className="panel-label dd-section-label" style={{ color: "var(--green)" }}>Rescripting Entry Point</div>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--muted)" }}>{analysis.intervention_window}</p>
+        </div>
       )}
     </div>
   );
@@ -259,7 +259,7 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
 function DiaryField({ label, value }: { icon: string; label: string; value: string }) {
   return (
     <div className="panel">
-      <div className="panel-label">{label}</div>
+      <div className="panel-label dd-section-label">{label}</div>
       <p className="text-sm leading-relaxed" style={{ color: "var(--muted)" }}>{value}</p>
     </div>
   );

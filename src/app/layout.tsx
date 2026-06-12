@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Newsreader, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -24,6 +24,12 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "DreamAI - Nightmare Therapy Through AI",
   description: "AI-powered Image Rehearsal Therapy to transform nightmares and reduce PTSD symptoms. Record, rescript, and rehearse your way to better sleep.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover", // enables env(safe-area-inset-*) for iOS notch/home-indicator
 };
 
 export default function RootLayout({

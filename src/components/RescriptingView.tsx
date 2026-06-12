@@ -152,7 +152,7 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
       </div>
 
       {/* Ending selector */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
         {data.endings.map((e, i) => (
           <button
             key={i}

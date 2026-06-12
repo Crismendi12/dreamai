@@ -36,7 +36,15 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
   const [completedScenes, setCompletedScenes] = useState<GeneratedScene[]>([]);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
-  const [activeIdx, setActiveIdx] = useState(0);
+  // renderedCount = how many scenes have finished "rendering"; the scene at index
+  // === renderedCount is the one currently rendering. dataReady = the generate()
+  // call has returned. We gate the player on the animation having stepped through
+  // EVERY scene, so it never gets cut off when generation resolves quickly.
+  const [renderedCount, setRenderedCount] = useState(0);
+  const [dataReady, setDataReady] = useState(false);
+
+  const totalScenes = scenes.length;
+  const STEP_MS = 1500;
 
   // Timer for user feedback
   useEffect(() => {
@@ -45,18 +53,8 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
     return () => clearInterval(timer);
   }, [phase]);
 
-  // Peacefully step through each scene as it "renders" while we wait.
-  // The last scene keeps rendering until generation returns.
-  useEffect(() => {
-    if (phase !== "generating") return;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    for (let i = 1; i < scenes.length; i++) {
-      timers.push(setTimeout(() => setActiveIdx(i), i * 1900));
-    }
-    return () => timers.forEach(clearTimeout);
-  }, [phase, scenes.length]);
-
-  // Single API call that blocks until all videos are ready
+  // Single API call that blocks until all videos are ready. Mark dataReady when it
+  // returns (don't reveal the player yet — the animation gate below does that).
   useEffect(() => {
     const generate = async () => {
       try {
@@ -79,12 +77,34 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
       } catch {
         setGenerationError("Connection error -- please check your internet and try again");
       }
-      setPhase("done");
+      setDataReady(true);
     };
     generate();
   }, [scenes, endingType]);
 
-  const totalScenes = scenes.length;
+  // Step through each scene one at a time, holding the LAST one as "rendering"
+  // until generation returns. This guarantees every scene animates through.
+  useEffect(() => {
+    if (phase !== "generating") return;
+    if (renderedCount >= totalScenes - 1) return; // hold the last scene rendering
+    const t = setTimeout(() => setRenderedCount((c) => c + 1), STEP_MS);
+    return () => clearTimeout(t);
+  }, [phase, renderedCount, totalScenes]);
+
+  // Finish: once data is ready AND the animation reached the last scene, mark it
+  // rendered and reveal the player after a calm beat. Errors short-circuit.
+  useEffect(() => {
+    if (phase !== "generating" || !dataReady) return;
+    if (generationError) {
+      const t = setTimeout(() => setPhase("done"), 300);
+      return () => clearTimeout(t);
+    }
+    if (renderedCount < totalScenes - 1) return; // wait for the walk-through to finish
+    const t1 = setTimeout(() => setRenderedCount(totalScenes), 450);
+    const t2 = setTimeout(() => setPhase("done"), 1150);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [phase, dataReady, generationError, renderedCount, totalScenes]);
+
   const minutes = Math.floor(elapsed / 60);
   const seconds = elapsed % 60;
   const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
@@ -141,39 +161,26 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
           </p>
         </div>
 
-        {/* Per-scene status list — steps through render -> done one at a time */}
-        <div className="plan-steps" style={{ width: "100%", maxWidth: "300px", margin: "8px auto 0", textAlign: "left" }}>
+        {/* Per-scene status list — same smooth opacity-fade pattern as the
+            analyzing screen (.live-steps / .live-row .on/.done) so states cross-
+            fade instead of popping. Driven by activeIdx. */}
+        <div className="live-steps" style={{ marginTop: "8px" }}>
           {scenes.map((s, i) => {
-            const done = i < activeIdx;
-            const rendering = i === activeIdx;
+            const done = i < renderedCount;
+            const rendering = i === renderedCount;
+            const status = done ? "Rendered" : rendering ? "Rendering" : "Queued";
             return (
-              <div key={i} className="plan-row">
-                <div
-                  className="plan-ic"
-                  style={done ? { background: "var(--green-soft)", color: "var(--green)" } : undefined}
-                >
-                  {done ? <Icon name="check" size={16} /> : rendering ? <span className="live-spin" /> : <Icon name="play" size={16} />}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div className="plan-t">Scene {s.scene_number || i + 1}</div>
-                  <div className="plan-s" style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                    {rendering && (
-                      <span
-                        className="animate-pulse"
-                        style={{
-                          width: "6px",
-                          height: "6px",
-                          borderRadius: "999px",
-                          background: "var(--accent)",
-                          display: "inline-block",
-                        }}
-                      />
-                    )}
-                    <span style={{ color: done ? "var(--green)" : rendering ? "var(--accent)" : "var(--faint)" }}>
-                      {done ? "Rendered" : rendering ? "Rendering" : "Queued"}
-                    </span>
-                  </div>
-                </div>
+              <div key={i} className={`live-row ${done ? "done" : ""} ${rendering ? "on" : ""}`}>
+                <span className="live-ic">
+                  {done ? (
+                    <Icon name="check" size={14} />
+                  ) : rendering ? (
+                    <span className="live-spin" />
+                  ) : (
+                    <Icon name="play" size={14} />
+                  )}
+                </span>
+                <span className="live-t">Scene {s.scene_number || i + 1} — {status}</span>
               </div>
             );
           })}

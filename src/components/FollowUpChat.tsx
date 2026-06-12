@@ -110,12 +110,23 @@ export default function FollowUpChat({ transcript, analysis, onComplete }: Follo
           <div className="carry-label">
             <Icon name="check" /> Captured so far
           </div>
-          {answers.map((a, i) => (
-            <div key={i} className="carry-row">
-              <span className="carry-k">{a.q}</span>
-              <span className="carry-v">{a.a}</span>
-            </div>
-          ))}
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {answers.map((a, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  paddingTop: i === 0 ? 0 : "12px",
+                  borderTop: i === 0 ? "none" : "1px solid var(--line)",
+                }}
+              >
+                <span style={{ fontSize: "12.5px", color: "var(--faint)", lineHeight: 1.4 }}>{a.q}</span>
+                <span style={{ fontSize: "14px", color: "var(--text)", fontWeight: 500, lineHeight: 1.45 }}>{a.a}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

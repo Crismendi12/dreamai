@@ -309,7 +309,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
         {!showEndCard && (
           <button
             onClick={isPlaying ? pause : play}
-            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            className="absolute inset-0 flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
           >
             <div className="w-16 h-16 rounded-full bg-[var(--accent)]/90 backdrop-blur-sm flex items-center justify-center text-white shadow-[0_8px_24px_rgba(30,58,138,0.45)]">
               {isPlaying ? (
@@ -351,7 +351,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
             <button
               onClick={() => goToScene(Math.max(0, currentScene - 1))}
               disabled={currentScene === 0}
-              className="p-1.5 text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-25 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="w-11 h-11 flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-25 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <Icon name="arrowleft" size={18} />
             </button>
@@ -370,7 +370,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
             <button
               onClick={() => goToScene(Math.min(scenes.length - 1, currentScene + 1))}
               disabled={currentScene === scenes.length - 1}
-              className="p-1.5 text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-25 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="w-11 h-11 flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-25 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <Icon name="arrowright" size={18} />
             </button>
