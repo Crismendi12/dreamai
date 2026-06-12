@@ -31,7 +31,7 @@ export default function TransformationView({ analysis, endingTitle }: Transforma
   const projectedDistress = Math.max(1, Math.round(originalDistress * 0.3));
   const reductionPct = Math.round(((originalDistress - projectedDistress) / originalDistress) * 100);
 
-  const topEmotions = emotions
+  const topEmotions = [...emotions]
     .sort((a, b) => b.intensity - a.intensity)
     .slice(0, 3)
     .map((e) => e.emotion);

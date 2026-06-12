@@ -42,12 +42,12 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
 
       {/* 1. Narrative — the story, reflected back first */}
       {analysis.narrative && (
-        <DiaryField icon="narrative" label="Dream Narrative" value={analysis.narrative} />
+        <DiaryField label="Dream Narrative" value={analysis.narrative} />
       )}
 
       {/* 2. Setting */}
       {analysis.setting && (
-        <DiaryField icon="location" label="Setting" value={analysis.setting} />
+        <DiaryField label="Setting" value={analysis.setting} />
       )}
 
       {/* 3. Characters */}
@@ -123,7 +123,7 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
 
       {/* 6. Body Response */}
       {analysis.somatic_response && (
-        <DiaryField icon="body" label="Body Response" value={analysis.somatic_response} />
+        <DiaryField label="Body Response" value={analysis.somatic_response} />
       )}
 
       {/* 7. Distress Level — the summarizing intensity gauge */}
@@ -208,12 +208,12 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
 
       {/* 10. Recurrence Pattern */}
       {analysis.recurrence_indicators && (
-        <DiaryField icon="recurrence" label="Recurrence Pattern" value={analysis.recurrence_indicators} />
+        <DiaryField label="Recurrence Pattern" value={analysis.recurrence_indicators} />
       )}
 
       {/* 11. Waking Life Connections */}
       {analysis.waking_life_links && (
-        <DiaryField icon="link" label="Waking Life Connections" value={analysis.waking_life_links} />
+        <DiaryField label="Waking Life Connections" value={analysis.waking_life_links} />
       )}
 
       {/* 12. Clinical Assessment */}
@@ -256,7 +256,7 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
   );
 }
 
-function DiaryField({ label, value }: { icon: string; label: string; value: string }) {
+function DiaryField({ label, value }: { label: string; value: string }) {
   return (
     <div className="panel">
       <div className="panel-label dd-section-label">{label}</div>

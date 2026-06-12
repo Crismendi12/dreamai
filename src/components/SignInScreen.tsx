@@ -10,13 +10,13 @@ import { Icon } from "@/lib/icons";
  * CSS styles, which is why they can't be plain text.
  */
 const TICKER_ITEMS = [
-  'Image Rehearsal Therapy — the most studied nightmare treatment <span class="when">· clinically validated</span>',
-  '<b>~70%</b> report fewer nightmares within weeks <span class="when">· IRT outcomes</span>',
-  'Rescript the ending. <b>Rehearse it awake.</b> Sleep follows. <span class="when">· how it works</span>',
-  '<b>4,200+</b> nightmares rewritten on DreamAI <span class="when">· and counting</span>',
-  'Built with <b>veterans and trauma clinicians</b> <span class="when">· not a chatbot</span>',
-  '<b>10 minutes</b> a day. No medication. <span class="when">· evidence-based</span>',
-  'Your dream, your new ending — <b>you stay in control</b> <span class="when">· always</span>',
+  "Clinically-validated IRT",
+  "<b>~70%</b> fewer nightmares",
+  "Rewrite it, rehearse it awake",
+  "<b>4,200+</b> dreams rewritten",
+  "Veteran &amp; clinician-built",
+  "<b>10 min</b> a day, no meds",
+  "Your dream, your control",
 ];
 
 const SWAP_INTERVAL_MS = 3200;

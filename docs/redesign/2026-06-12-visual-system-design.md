@@ -1,3 +1,5 @@
+> Historical design record — see [`/README.md`](../../README.md) and [`/docs/ARCHITECTURE.md`](../ARCHITECTURE.md) for current state.
+
 # DreamAI → DreamAI Design System — Redesign Spec
 
 **Date:** 2026-06-12
