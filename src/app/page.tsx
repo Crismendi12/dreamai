@@ -8,6 +8,7 @@ import RescriptingView from "@/components/RescriptingView";
 import VideoGenerator from "@/components/VideoGenerator";
 import HabitTracker from "@/components/HabitTracker";
 import TransformationView from "@/components/TransformationView";
+import { Icon, type IconName } from "@/lib/icons";
 
 type Step = "landing" | "record" | "analyzing" | "diary" | "followup" | "rescript" | "video" | "tracker" | "transformation";
 
@@ -22,6 +23,13 @@ interface SelectedEnding {
     mood: string;
   }>;
 }
+
+const ANALYZE_STEPS: { ic: IconName; t: string }[] = [
+  { ic: "quote", t: "Reading your dream" },
+  { ic: "search", t: "Identifying patterns & emotions" },
+  { ic: "brain", t: "Mapping sensory detail" },
+  { ic: "list", t: "Structuring your diary entry" },
+];
 
 export default function Home() {
   const [step, setStep] = useState<Step>("landing");
@@ -77,78 +85,81 @@ export default function Home() {
     : 0;
 
   return (
-    <div className="min-h-screen flex flex-col relative">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent-warm)] flex items-center justify-center shadow-lg shadow-[var(--accent)]/10">
-            <svg className="w-4 h-4 text-[#080B14]" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 006.002-2.248z" />
-            </svg>
-          </div>
-          <span className="text-lg font-display font-semibold tracking-tight">
-            Dream<span className="text-[var(--accent)]">AI</span>
+      <header
+        className="flex items-center justify-between gap-4 px-6 py-4"
+        style={{ borderBottom: "1px solid var(--line)", background: "rgba(250,250,250,0.92)", backdropFilter: "blur(8px)" }}
+      >
+        <div className="flex items-center gap-2.5">
+          <span
+            className="flex items-center justify-center"
+            style={{ width: 32, height: 32, borderRadius: 10, background: "var(--accent-soft)", color: "var(--accent)" }}
+          >
+            <Icon name="moon" size={18} />
+          </span>
+          <span className="font-display" style={{ fontSize: 20, letterSpacing: "-0.02em" }}>
+            Dream<span style={{ fontStyle: "italic", color: "var(--accent)" }}>AI</span>
           </span>
         </div>
 
         {step !== "landing" && (
-          <div className="flex items-center gap-1.5">
-            {steps.map((s, i) => (
-              <div key={s} className="flex items-center gap-1.5">
-                <div className={`w-5 h-5 rounded-full text-[9px] font-medium flex items-center justify-center transition-all duration-500 ${
-                  i <= stepIndex
-                    ? "bg-[var(--accent)] text-[#080B14]"
-                    : "bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-subtle)]"
-                }`}>
-                  {i < stepIndex ? (
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                  ) : (
-                    i + 1
-                  )}
-                </div>
-                <span className={`text-[10px] hidden sm:block transition-colors duration-500 ${
-                  i <= stepIndex ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"
-                }`}>{s}</span>
-                {i < steps.length - 1 && (
-                  <div className={`w-4 h-px transition-colors duration-500 ${i < stepIndex ? "bg-[var(--accent)]/50" : "bg-[var(--border-subtle)]"}`} />
-                )}
-              </div>
-            ))}
+          <div className="flex items-center gap-3">
+            <span className="step-kicker hidden sm:block">{steps[stepIndex] ?? ""}</span>
+            <div className="progress-dots" style={{ maxWidth: 220, minWidth: 140 }}>
+              {steps.map((s, i) => (
+                <span key={s} className={`pd ${i < stepIndex ? "is-done" : ""} ${i === stepIndex ? "is-active" : ""}`}>
+                  <span className="pd-fill" />
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         {step === "landing" && <LandingView onStart={() => setStep("record")} />}
         {error && (
-          <div className="mb-4 px-4 py-3 rounded-xl bg-[var(--danger)]/10 border border-[var(--danger)]/20 text-[var(--danger)] text-sm text-center max-w-lg animate-fade-in">
-            {error}
+          <div className="mb-5 w-full max-w-lg animate-fade-in">
+            <div
+              className="flex items-center gap-2.5 px-4 py-3"
+              style={{ background: "var(--amber-soft)", border: "1px solid var(--line)", borderRadius: 14, color: "var(--amber)", fontSize: 14 }}
+            >
+              <Icon name="alert" size={16} />
+              <span>{error}</span>
+            </div>
           </div>
         )}
         {step === "record" && <VoiceRecorder onTranscriptReady={handleTranscript} />}
         {step === "analyzing" && (
-          <div className="flex flex-col items-center gap-6 animate-fade-in">
-            <div className="relative w-12 h-12">
-              <div className="absolute inset-0 rounded-full border-2 border-[var(--accent)]/20" />
-              <div className="absolute inset-0 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+          <div className="analysing animate-fade-in">
+            <div className="orb-stage">
+              <div className="orb-glow" />
+              <div className="orb" />
+              <span className="spark s1"><Icon name="spark" size={20} /></span>
+              <span className="spark s2"><Icon name="spark" size={26} /></span>
+              <span className="spark s3"><Icon name="spark" size={15} /></span>
             </div>
-            <div className="text-center space-y-2">
-              <p className="text-[var(--text-primary)] font-display">Analyzing your dream...</p>
-              <p className="text-xs text-[var(--text-muted)]">Identifying patterns, emotions, and sensory details</p>
+            <h2 className="analyse-head">Analyzing your dream…</h2>
+            <div className="live-steps">
+              {ANALYZE_STEPS.map((s, i) => (
+                <div key={s.t} className={`live-row ${i === 0 ? "on" : ""}`}>
+                  <span className="live-ic">
+                    {i === 0 ? <span className="live-spin" /> : <Icon name={s.ic} size={14} />}
+                  </span>
+                  <span className="live-t">{s.t}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
         {step === "diary" && analysis && (
           <div className="flex flex-col items-center gap-8 w-full">
             <DreamDiary analysis={analysis as Record<string, unknown>} />
-            <button
-              onClick={() => setStep("followup")}
-              className="btn-primary px-8 py-3 rounded-xl text-sm cursor-pointer"
-            >
-              Continue -- Let&apos;s Go Deeper
+            <button onClick={() => setStep("followup")} className="btn btn--brand">
+              Continue — Let&apos;s Go Deeper
+              <Icon name="arrowright" size={18} />
             </button>
           </div>
         )}
@@ -186,8 +197,8 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 px-6 py-4 border-t border-[var(--border-subtle)] text-center">
-        <p className="text-xs text-[var(--text-muted)]">
+      <footer className="px-6 py-4 text-center" style={{ borderTop: "1px solid var(--line)" }}>
+        <p style={{ fontSize: 12, color: "var(--faint)", lineHeight: 1.5 }}>
           DreamAI uses AI-powered Image Rehearsal Therapy (IRT) to help transform nightmares.
           {" "}Not a substitute for professional mental health care.
         </p>
@@ -198,84 +209,56 @@ export default function Home() {
 
 function LandingView({ onStart }: { onStart: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-12 max-w-xl text-center animate-fade-in">
-      {/* Hero icon */}
-      <div className="relative animate-float">
-        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-[var(--accent)]/20 to-[var(--accent-cool)]/10 flex items-center justify-center border border-[var(--accent)]/15">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[var(--accent)]/30 to-[var(--accent-warm)]/20 flex items-center justify-center">
-            <svg className="w-10 h-10 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 006.002-2.248z" />
-            </svg>
-          </div>
-        </div>
-        <div className="absolute -inset-6 rounded-full bg-[var(--accent)]/5 blur-2xl" />
-      </div>
-
-      {/* Headline */}
-      <div className="space-y-5">
-        <h1 className="text-4xl sm:text-5xl font-display font-bold tracking-tight leading-[1.1]">
-          Transform Your
-          <br />
-          <span className="bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] bg-clip-text text-transparent">
-            Nightmares
+    <div className="voice animate-fade-in">
+      <div className="home-head">
+        <div className="animate-float" style={{ marginBottom: 4 }}>
+          <span
+            className="flex items-center justify-center"
+            style={{ width: 96, height: 96, borderRadius: 999, background: "var(--accent-soft)", color: "var(--accent)" }}
+          >
+            <Icon name="moon" size={40} />
           </span>
+        </div>
+        <span className="greeting">AI-guided dream rescripting</span>
+        <h1 className="serif-hero">
+          Transform your<br />
+          <span className="em">nightmares.</span>
         </h1>
-        <p className="text-base text-[var(--text-secondary)] leading-relaxed max-w-md mx-auto">
+        <p className="subhead" style={{ maxWidth: "32rem" }}>
           AI-powered Image Rehearsal Therapy that helps you take control of your dreams.
           Record, rescript, and rehearse your way to better sleep.
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-8 w-full max-w-sm">
-        <StatCard value="70%" label="Nightmare reduction with IRT" />
-        <StatCard value="10" label="Days to lasting change" />
-        <StatCard value="90%" label="Maintain gains at 6 months" />
-      </div>
-
-      {/* CTA */}
-      <button
-        onClick={onStart}
-        className="group btn-primary px-12 py-4 rounded-xl text-base cursor-pointer"
-      >
-        Begin Your Session
-        <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
+      <button onClick={onStart} className="btn btn--brand" style={{ marginTop: 10 }}>
+        Begin your session
+        <Icon name="arrowright" size={18} />
       </button>
 
-      {/* Steps */}
-      <div className="grid grid-cols-4 gap-3 w-full pt-2">
-        <StepCard step="1" title="Record" desc="Speak or type your dream" />
-        <StepCard step="2" title="Analyze" desc="AI extracts patterns" />
-        <StepCard step="3" title="Rescript" desc="Choose a new ending" />
-        <StepCard step="4" title="Rehearse" desc="Watch before sleep" />
+      {/* How it works */}
+      <div className="how">
+        <span className="how-step"><span className="hn">1</span> <b>Record</b></span>
+        <span className="how-arrow"><Icon name="arrowright" size={15} /></span>
+        <span className="how-step"><span className="hn">2</span> <b>Analyze</b></span>
+        <span className="how-arrow"><Icon name="arrowright" size={15} /></span>
+        <span className="how-step"><span className="hn">3</span> <b>Rescript</b></span>
+        <span className="how-arrow"><Icon name="arrowright" size={15} /></span>
+        <span className="how-step"><span className="hn">4</span> <b>Rehearse</b></span>
+      </div>
+
+      {/* Proof */}
+      <div className="proof">
+        <span><b>70%</b> nightmare reduction</span><span className="dot" />
+        <span><b>10 days</b> to lasting change</span><span className="dot" />
+        <span><b>90%</b> maintain at 6 months</span><span className="dot" />
+        <span className="verified"><Icon name="check" size={13} /> Clinically grounded</span>
       </div>
 
       {/* Citation */}
-      <p className="text-[11px] text-[var(--text-muted)] max-w-sm leading-relaxed">
-        Based on Image Rehearsal Therapy protocols validated by Krakow & Zadra (2006) and Aurora et al. (2010).
-        In collaboration with Dr. Michael Breus, PhD -- The Sleep Doctor.
+      <p style={{ fontSize: 11, color: "var(--faint)", maxWidth: "32rem", lineHeight: 1.5, marginTop: 6 }}>
+        Based on Image Rehearsal Therapy protocols validated by Krakow &amp; Zadra (2006) and Aurora et al. (2010).
+        In collaboration with Dr. Michael Breus, PhD — The Sleep Doctor.
       </p>
-    </div>
-  );
-}
-
-function StatCard({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="text-center space-y-1.5">
-      <div className="text-2xl font-display font-bold text-[var(--accent)]">{value}</div>
-      <div className="text-[10px] text-[var(--text-muted)] leading-tight">{label}</div>
-    </div>
-  );
-}
-
-function StepCard({ step, title, desc }: { step: string; title: string; desc: string }) {
-  return (
-    <div className="glass rounded-xl p-3.5 text-center transition-all hover:border-[var(--accent)]/15">
-      <div className="w-7 h-7 rounded-full bg-[var(--accent)]/8 text-[var(--accent)] text-xs font-bold flex items-center justify-center mx-auto mb-2 border border-[var(--accent)]/15">
-        {step}
-      </div>
-      <h3 className="text-xs font-semibold text-[var(--text-primary)] mb-0.5">{title}</h3>
-      <p className="text-[10px] text-[var(--text-muted)]">{desc}</p>
     </div>
   );
 }
