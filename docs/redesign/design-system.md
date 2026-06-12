@@ -1,6 +1,6 @@
-# Ajust Design System — Reference for DreamAI Reskin
+# DreamAI Design System — Reference for DreamAI Reskin
 
-Canonical tokens, type, components, and motion extracted from `/Users/lancemarks/Downloads/ajust-rant-to-us (1).html`. Phase 1 ports these into `src/app/globals.css` + `src/app/layout.tsx`. Phase 2 component agents use this as the styling vocabulary. After Phase 1, the live `globals.css` is the runtime source of truth; this doc is the orientation guide.
+Canonical tokens, type, components, and motion extracted from `/Users/lancemarks/Downloads/reference-prototype.html`. Phase 1 ports these into `src/app/globals.css` + `src/app/layout.tsx`. Phase 2 component agents use this as the styling vocabulary. After Phase 1, the live `globals.css` is the runtime source of truth; this doc is the orientation guide.
 
 ---
 
@@ -15,12 +15,12 @@ Canonical tokens, type, components, and motion extracted from `/Users/lancemarks
   --text:      #1A1A18;   /* primary ink (warm near-black) */
   --muted:     #6F6E67;   /* secondary text */
   --faint:     #8A887F;   /* tertiary / captions / placeholders */
-  --accent:    #7C3AED;   /* primary violet */
-  --accent-d:  #6D28D9;   /* violet hover / gradient end */
-  --accent-l:  #A78BFA;   /* light violet / gradient mid */
-  --accent-soft: #F3EDFE; /* pale violet wash — icon chip bg */
-  --accent-tint: rgba(124,58,237,0.08);
-  --accent-tint-strong: rgba(124,58,237,0.14);
+  --accent:    #1E3A8A;   /* primary deep navy */
+  --accent-d:  #172554;   /* deep navy hover / gradient end */
+  --accent-l:  #3B82F6;   /* light deep navy / gradient mid */
+  --accent-soft: #E8EEFB; /* pale deep navy wash — icon chip bg */
+  --accent-tint: rgba(30,58,138,0.08);
+  --accent-tint-strong: rgba(30,58,138,0.14);
   --green:     #1B7A4B;   /* success / verified */
   --green-soft:#E8F5EE;
   --amber:     #B4690E;   /* caution */
@@ -32,7 +32,7 @@ Canonical tokens, type, components, and motion extracted from `/Users/lancemarks
 }
 ```
 
-**Mapping to DreamAI's existing var names** (so legacy `var(--…)` consumers re-theme for free): redefine `--accent` → `#7C3AED`, `--accent-warm` → `--accent-l`/`#A78BFA`, `--success` → `--green`, `--danger` → a rose that reads on light (e.g. `#C0392B`), `--text-primary` → `--text`, `--text-secondary` → `--muted`, `--text-muted` → `--faint`, `--bg-deep` → `--bg`, `--bg-card`/`--bg-elevated` → `--bg-2`, `--border`/`--border-subtle` → `--line`. Keep BOTH the Ajust names and the legacy names defined.
+**Mapping to DreamAI's existing var names** (so legacy `var(--…)` consumers re-theme for free): redefine `--accent` → `#1E3A8A`, `--accent-warm` → `--accent-l`/`#3B82F6`, `--success` → `--green`, `--danger` → a rose that reads on light (e.g. `#C0392B`), `--text-primary` → `--text`, `--text-secondary` → `--muted`, `--text-muted` → `--faint`, `--bg-deep` → `--bg`, `--bg-card`/`--bg-elevated` → `--bg-2`, `--border`/`--border-subtle` → `--line`. Keep BOTH the reference names and the legacy names defined.
 
 ## 2. Fonts (`next/font/google` in `layout.tsx`)
 
@@ -72,17 +72,17 @@ Keep the `<html className={...}>` variable wiring. `globals.css` already maps `-
 
 - **Radius:** cards/panels 16–20px; pills/circles `999px`; icon chips 9–12px; inputs 14px.
 - **Card shadow:** `0 1px 2px rgba(26,26,24,0.04)`; transcript/composer `0 12px 30px -24px rgba(26,26,24,0.4)`.
-- **Mic shadow:** `0 18px 40px -16px rgba(124,58,237,0.6), inset 0 1px 0 rgba(255,255,255,0.2)`.
-- **Outcome hero shadow:** `0 20px 44px -22px rgba(124,58,237,0.7)`.
+- **Mic shadow:** `0 18px 40px -16px rgba(30,58,138,0.6), inset 0 1px 0 rgba(255,255,255,0.2)`.
+- **Outcome hero shadow:** `0 20px 44px -22px rgba(30,58,138,0.7)`.
 - **Stage layout:** `.stage { min-height: calc(100vh - …); display:flex; align-items:center; justify-content:center; padding:48px 24px }`; `.stage--top { align-items:flex-start }`. (DreamAI already centers via its shell — apply the same generous centered padding + per-screen `max-width` caps: voice 620, listen 600, analysing 520, take 660, intake 600, catgrid 760, handoff 480.)
 
 ## 5. Component class catalogue
 
 > Port the full CSS rules for each from the HTML `<style>` block (lines 45–433). One-liners below; see HTML for exact rules. **Drop the prototype-only `.chrome`/`.tabs`/`.concept-note`/`.variant` explorer scaffolding — not part of the product.**
 
-- **Buttons:** `.btn` (pill, h52, r999, wght600) + `.btn--brand` (violet), `.btn--dark` (`--dark` bg), `.btn--ghost` (white + line border), `.btn--block` (full width). `.linklike` (underlined faint text-button).
+- **Buttons:** `.btn` (pill, h52, r999, wght600) + `.btn--brand` (deep navy), `.btn--dark` (`--dark` bg), `.btn--ghost` (white + line border), `.btn--block` (full width). `.linklike` (underlined faint text-button).
 - **Brand:** `.mark` (logo slot — DreamAI uses a Newsreader wordmark instead), `.greeting` (mono kicker), `.serif-hero` (+ `.em` italic accent), `.subhead`.
-- **Mic / vent:** `.mic-wrap`(+`.idle`), `.mic-ring` ×3 (ripple), `.mic-btn` (112px violet gradient disc), `.mic-hint`. Alts: `.voice-alts`, `.alt-sep` (or-divider), `.nosure` (suggestion card).
+- **Mic / vent:** `.mic-wrap`(+`.idle`), `.mic-ring` ×3 (ripple), `.mic-btn` (112px deep navy gradient disc), `.mic-hint`. Alts: `.voice-alts`, `.alt-sep` (or-divider), `.nosure` (suggestion card).
 - **How / proof:** `.how`/`.how-step`/`.hn` (numbered step strip), `.how-arrow`; `.proof`/`.dot`/`.verified` (stat row).
 - **Listening:** `.rec-pill`+`.rec-dot` (pulsing LIVE chip), `.wave` + `span` bars (`bar` keyframe, staggered delays), `.transcript` (serif card, `.dim` + `.caret`), `.listen-actions`, `.stop-btn` (dark circle).
 - **Analysing (orb):** `.orb-stage`, `.orb-glow` (`breathe`), `.orb` (conic-gradient blob, `morph`+`spin`), `.spark` s1/s2/s3 (`twinkle`), `.analyse-head`, `.live-steps`, `.live-row`(`.on`/`.done`), `.live-ic` (done→green check), `.live-spin` (`rot`), `.live-t`.
@@ -100,7 +100,7 @@ Keep the `<html className={...}>` variable wiring. `globals.css` already maps `-
 
 ## 7. Icons (`src/lib/icons.tsx`)
 
-Port the `I = {...}` object: stroke-based inline SVGs, 24×24 viewBox, `stroke-width` ~1.8, `currentColor`, round caps/joins. **Exclude the Ajust `logo()` SVG.** Useful names already present and reusable for sleep/dream/therapy: `mic`, `micsm`, `stop`, `keyboard`, `spark`, `sparkline`, `check`, `play`, `refresh`, `brain`, `lightbulb`, `shieldcheck`, `lock`, `target`, `alert`, `list`, `search`, `file`, `send`, `arrowright/left/up`, `trophy`, `zap`, `repeat`. Add a `moon`/`sleep` glyph for DreamAI. Replace component emoji (👤🔮💭🔗⚡🦋🏡) and ASCII (`~ + * #`) with these.
+Port the `I = {...}` object: stroke-based inline SVGs, 24×24 viewBox, `stroke-width` ~1.8, `currentColor`, round caps/joins. **Exclude the reference `logo()` SVG.** Useful names already present and reusable for sleep/dream/therapy: `mic`, `micsm`, `stop`, `keyboard`, `spark`, `sparkline`, `check`, `play`, `refresh`, `brain`, `lightbulb`, `shieldcheck`, `lock`, `target`, `alert`, `list`, `search`, `file`, `send`, `arrowright/left/up`, `trophy`, `zap`, `repeat`. Add a `moon`/`sleep` glyph for DreamAI. Replace component emoji (👤🔮💭🔗⚡🦋🏡) and ASCII (`~ + * #`) with these.
 
 ## 8. Responsive
 

@@ -155,11 +155,11 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
   }, []);
 
   const moodGradients: Record<string, string> = {
-    empowering: "from-[#2E2A3A] to-[#1A1A18]",
-    calm: "from-[#1F1B2E] to-[#1A1A18]",
-    warm: "from-[#2A2235] to-[#1A1A18]",
-    peaceful: "from-[#221E36] to-[#1A1A18]",
-    hopeful: "from-[#2C2540] to-[#1A1A18]",
+    empowering: "from-[#1E2A4A] to-[#0E1526]",
+    calm: "from-[#16203A] to-[#0E1526]",
+    warm: "from-[#1F2746] to-[#0E1526]",
+    peaceful: "from-[#192340] to-[#0E1526]",
+    hopeful: "from-[#24315A] to-[#0E1526]",
   };
 
   return (
@@ -180,7 +180,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
         </p>
       </div>
 
-      {/* Cinematic Player — light Ajust frame around a dark video stage */}
+      {/* Cinematic Player — light frame around a dark video stage */}
       <div className="rounded-[20px] bg-[var(--bg-2)] border border-[var(--line)] p-2 shadow-[0_12px_30px_-24px_rgba(26,26,24,0.4)]">
       <div className="relative rounded-2xl overflow-hidden bg-[#1A1A18] aspect-video group">
         {/* Main video/visual */}
@@ -270,7 +270,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
         {/* HD Video badge */}
         {scene.video_url && (
           <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] text-white text-[11px] font-semibold px-2.5 py-1 shadow-[0_2px_8px_rgba(124,58,237,0.4)]">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] text-white text-[11px] font-semibold px-2.5 py-1 shadow-[0_2px_8px_rgba(30,58,138,0.4)]">
               <Icon name="spark" size={11} />
               AI Video
             </span>
@@ -311,7 +311,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
             onClick={isPlaying ? pause : play}
             className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
           >
-            <div className="w-16 h-16 rounded-full bg-[var(--accent)]/90 backdrop-blur-sm flex items-center justify-center text-white shadow-[0_8px_24px_rgba(124,58,237,0.45)]">
+            <div className="w-16 h-16 rounded-full bg-[var(--accent)]/90 backdrop-blur-sm flex items-center justify-center text-white shadow-[0_8px_24px_rgba(30,58,138,0.45)]">
               {isPlaying ? (
                 <Icon name="pause" size={26} />
               ) : (
@@ -358,7 +358,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
 
             <button
               onClick={isPlaying ? pause : play}
-              className="w-11 h-11 rounded-full bg-[var(--accent)] text-white flex items-center justify-center hover:bg-[var(--accent-d)] transition-colors cursor-pointer shadow-[0_6px_18px_-8px_rgba(124,58,237,0.7)]"
+              className="w-11 h-11 rounded-full bg-[var(--accent)] text-white flex items-center justify-center hover:bg-[var(--accent-d)] transition-colors cursor-pointer shadow-[0_6px_18px_-8px_rgba(30,58,138,0.7)]"
             >
               {isPlaying ? (
                 <Icon name="pause" size={18} />

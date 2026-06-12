@@ -216,7 +216,7 @@ export default function DreamDiary({ analysis }: { analysis: DreamAnalysis }) {
                 className="pill"
                 style={{
                   background: "var(--accent-soft)",
-                  borderColor: "rgba(124,58,237,0.2)",
+                  borderColor: "rgba(30,58,138,0.2)",
                   color: "var(--accent-d)",
                 }}
               >

@@ -135,7 +135,7 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
 
   const labels = ["Mastery", "Transformation", "Safety"];
   const iconNames: IconName[] = ["zap", "heart", "shieldcheck"];
-  const colors = ["#7C3AED", "#6D28D9", "#A78BFA"];
+  const colors = ["#1E3A8A", "#172554", "#3B82F6"];
 
   const ending = selectedEnding !== null ? data.endings[selectedEnding] : null;
 

@@ -1,7 +1,7 @@
 /**
- * Ajust design-system icon set, ported for DreamAI.
+ * DreamAI design-system icon set.
  * Stroke-based inline SVGs, 24x24 viewBox, stroke-width ~1.8, currentColor.
- * The Ajust brand logo is intentionally NOT included.
+ * No external brand logo is included.
  *
  * Usage:
  *   <Icon name="mic" size={18} className="text-[var(--accent)]" />
