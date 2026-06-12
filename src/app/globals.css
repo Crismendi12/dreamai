@@ -241,7 +241,7 @@ h1, h2, h3, .font-display {
 .spark.s3 { top: 60px; right: 22px; width: 15px; height: 15px; animation: twinkle 2.4s ease-in-out 1.5s infinite; }
 @keyframes twinkle { 0%,100% { opacity: 0; transform: scale(0.6) rotate(0deg); } 50% { opacity: 1; transform: scale(1) rotate(20deg); } }
 .analyse-head { font-family: var(--font-display), var(--serif); font-size: clamp(24px,4.5vw,30px); letter-spacing:-0.02em; margin: 4px 0 22px; }
-.live-steps { width: 100%; max-width: 360px; display:flex; flex-direction:column; gap: 4px; }
+.live-steps { width: 100%; max-width: 300px; margin: 0 auto; display:flex; flex-direction:column; gap: 4px; }
 .live-row { display:flex; align-items:center; gap: 12px; padding: 11px 4px; text-align:left; opacity: 0.35; transition: opacity 360ms ease; }
 .live-row.on { opacity: 1; }
 .live-row.done { opacity: 0.85; }

@@ -36,6 +36,7 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
   const [completedScenes, setCompletedScenes] = useState<GeneratedScene[]>([]);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(0);
 
   // Timer for user feedback
   useEffect(() => {
@@ -43,6 +44,17 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
     const timer = setInterval(() => setElapsed(e => e + 1), 1000);
     return () => clearInterval(timer);
   }, [phase]);
+
+  // Peacefully step through each scene as it "renders" while we wait.
+  // The last scene keeps rendering until generation returns.
+  useEffect(() => {
+    if (phase !== "generating") return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (let i = 1; i < scenes.length; i++) {
+      timers.push(setTimeout(() => setActiveIdx(i), i * 1900));
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [phase, scenes.length]);
 
   // Single API call that blocks until all videos are ready
   useEffect(() => {
@@ -129,29 +141,42 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
           </p>
         </div>
 
-        {/* Per-scene status list */}
-        <div className="plan-steps" style={{ width: "100%", maxWidth: "360px", marginTop: "8px", textAlign: "left" }}>
-          {scenes.map((s, i) => (
-            <div key={i} className="plan-row">
-              <div className="plan-ic"><Icon name="play" /></div>
-              <div style={{ flex: 1 }}>
-                <div className="plan-t">Scene {s.scene_number || i + 1}</div>
-                <div className="plan-s" style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                  <span
-                    className="animate-pulse"
-                    style={{
-                      width: "6px",
-                      height: "6px",
-                      borderRadius: "999px",
-                      background: "var(--accent)",
-                      display: "inline-block",
-                    }}
-                  />
-                  <span style={{ color: "var(--accent)" }}>Rendering</span>
+        {/* Per-scene status list — steps through render -> done one at a time */}
+        <div className="plan-steps" style={{ width: "100%", maxWidth: "300px", margin: "8px auto 0", textAlign: "left" }}>
+          {scenes.map((s, i) => {
+            const done = i < activeIdx;
+            const rendering = i === activeIdx;
+            return (
+              <div key={i} className="plan-row">
+                <div
+                  className="plan-ic"
+                  style={done ? { background: "var(--green-soft)", color: "var(--green)" } : undefined}
+                >
+                  {done ? <Icon name="check" size={16} /> : rendering ? <span className="live-spin" /> : <Icon name="play" size={16} />}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="plan-t">Scene {s.scene_number || i + 1}</div>
+                  <div className="plan-s" style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                    {rendering && (
+                      <span
+                        className="animate-pulse"
+                        style={{
+                          width: "6px",
+                          height: "6px",
+                          borderRadius: "999px",
+                          background: "var(--accent)",
+                          display: "inline-block",
+                        }}
+                      />
+                    )}
+                    <span style={{ color: done ? "var(--green)" : rendering ? "var(--accent)" : "var(--faint)" }}>
+                      {done ? "Rendered" : rendering ? "Rendering" : "Queued"}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <p

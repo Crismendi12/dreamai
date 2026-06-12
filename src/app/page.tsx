@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import VoiceRecorder from "@/components/VoiceRecorder";
 import FollowUpChat from "@/components/FollowUpChat";
 import DreamDiary from "@/components/DreamDiary";
@@ -31,6 +31,8 @@ const ANALYZE_STEPS: { ic: IconName; t: string }[] = [
   { ic: "brain", t: "Mapping sensory detail" },
   { ic: "list", t: "Structuring your diary entry" },
 ];
+// Peaceful cadence for stepping through the analysis stages while we wait.
+const ANALYZE_STEP_MS = 850;
 
 export default function Home() {
   const [step, setStep] = useState<Step>("landing");
@@ -75,6 +77,15 @@ export default function Home() {
     setStep("video");
   };
 
+  const resetToHome = () => {
+    setStep("landing");
+    setTranscript("");
+    setAnalysis(null);
+    setFollowUpAnswers([]);
+    setSelectedEnding(null);
+    setError(null);
+  };
+
   const steps = ["Record", "Analyze", "Deepen", "Rescript", "Watch", "Heal"];
   const stepIndex = step === "landing" ? -1
     : step === "record" ? 0
@@ -92,7 +103,13 @@ export default function Home() {
         className="flex items-center justify-between gap-4 px-6 py-4"
         style={{ borderBottom: "1px solid var(--line)", background: "rgba(250,250,250,0.92)", backdropFilter: "blur(8px)" }}
       >
-        <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={resetToHome}
+          aria-label="DreamAI — back to start"
+          className="flex items-center gap-2.5"
+          style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+        >
           <span
             className="flex items-center justify-center"
             style={{ width: 32, height: 32, borderRadius: 10, background: "var(--accent-soft)", color: "var(--accent)" }}
@@ -102,7 +119,7 @@ export default function Home() {
           <span className="font-display" style={{ fontSize: 20, letterSpacing: "-0.02em" }}>
             Dream<span style={{ fontStyle: "italic", color: "var(--accent)" }}>AI</span>
           </span>
-        </div>
+        </button>
 
         {step !== "landing" && (
           <div className="flex items-center gap-3">
@@ -133,28 +150,7 @@ export default function Home() {
           </div>
         )}
         {step === "record" && <VoiceRecorder onTranscriptReady={handleTranscript} />}
-        {step === "analyzing" && (
-          <div className="analysing animate-fade-in">
-            <div className="orb-stage">
-              <div className="orb-glow" />
-              <div className="orb" />
-              <span className="spark s1"><Icon name="spark" size={20} /></span>
-              <span className="spark s2"><Icon name="spark" size={26} /></span>
-              <span className="spark s3"><Icon name="spark" size={15} /></span>
-            </div>
-            <h2 className="analyse-head">Analyzing your dream…</h2>
-            <div className="live-steps">
-              {ANALYZE_STEPS.map((s, i) => (
-                <div key={s.t} className={`live-row ${i === 0 ? "on" : ""}`}>
-                  <span className="live-ic">
-                    {i === 0 ? <span className="live-spin" /> : <Icon name={s.ic} size={14} />}
-                  </span>
-                  <span className="live-t">{s.t}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {step === "analyzing" && <AnalyzingView />}
         {step === "diary" && analysis && (
           <div className="flex flex-col items-center gap-8 w-full">
             <DreamDiary analysis={analysis as Record<string, unknown>} />
@@ -205,6 +201,49 @@ export default function Home() {
           {" "}Not a substitute for professional mental health care.
         </p>
       </footer>
+    </div>
+  );
+}
+
+function AnalyzingView() {
+  // Advance through the stages one at a time (done -> spinning -> idle) for a calm,
+  // legible "thinking" beat. The last stage keeps spinning until analysis returns
+  // and the screen advances on its own.
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (let i = 1; i < ANALYZE_STEPS.length; i++) {
+      timers.push(setTimeout(() => setActive(i), i * ANALYZE_STEP_MS));
+    }
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <div className="analysing animate-fade-in">
+      <div className="orb-stage">
+        <div className="orb-glow" />
+        <div className="orb" />
+        <span className="spark s1"><Icon name="spark" size={20} /></span>
+        <span className="spark s2"><Icon name="spark" size={26} /></span>
+        <span className="spark s3"><Icon name="spark" size={15} /></span>
+      </div>
+      <h2 className="analyse-head">Analyzing your dream…</h2>
+      <div className="live-steps">
+        {ANALYZE_STEPS.map((s, i) => (
+          <div key={s.t} className={`live-row ${i < active ? "done" : ""} ${i === active ? "on" : ""}`}>
+            <span className="live-ic">
+              {i < active ? (
+                <Icon name="check" size={14} />
+              ) : i === active ? (
+                <span className="live-spin" />
+              ) : (
+                <Icon name={s.ic} size={14} />
+              )}
+            </span>
+            <span className="live-t">{s.t}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

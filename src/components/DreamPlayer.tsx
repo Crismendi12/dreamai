@@ -176,7 +176,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
           Your Rehearsal Experience
         </h2>
         <p className="subhead">
-          {endingTitle} -- Watch with earbuds for best experience
+          {endingTitle} · Watch with earbuds for best experience
         </p>
       </div>
 

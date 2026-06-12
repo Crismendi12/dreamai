@@ -160,7 +160,7 @@ function mockFor(path: string, init?: RequestInit): { body: unknown; ms: number 
     return { body: { text: DEMO_TRANSCRIPT }, ms: 800 };
   }
   if (path.includes("/api/analyze")) {
-    return { body: { analysis: DEMO_ANALYSIS }, ms: 2200 };
+    return { body: { analysis: DEMO_ANALYSIS }, ms: 3600 };
   }
   if (path.includes("/api/followup")) {
     let round1 = true;
@@ -183,7 +183,7 @@ function mockFor(path: string, init?: RequestInit): { body: unknown; ms: number 
       ...s,
       video_url: null,
     }));
-    return { body: { scenes }, ms: 3500 };
+    return { body: { scenes }, ms: 7000 };
   }
   return { body: {}, ms: 300 };
 }
