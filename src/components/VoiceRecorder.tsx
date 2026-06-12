@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Icon } from "@/lib/icons";
+import { apiFetch } from "@/lib/api";
 
 interface VoiceRecorderProps {
   onTranscriptReady: (transcript: string) => void;
@@ -74,7 +75,7 @@ export default function VoiceRecorder({ onTranscriptReady }: VoiceRecorderProps)
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
 
-      const res = await fetch("/api/transcribe", {
+      const res = await apiFetch("/api/transcribe", {
         method: "POST",
         body: formData,
       });

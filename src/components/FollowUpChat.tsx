@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Icon } from "@/lib/icons";
+import { apiFetch } from "@/lib/api";
 
 interface FollowUpChatProps {
   transcript: string;
@@ -19,7 +20,7 @@ export default function FollowUpChat({ transcript, analysis, onComplete }: Follo
   const fetchQuestions = async (prevAnswers: { q: string; a: string }[]) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/followup", {
+      const res = await apiFetch("/api/followup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -150,7 +151,7 @@ export default function FollowUpChat({ transcript, analysis, onComplete }: Follo
           className="btn btn--brand"
           style={{ opacity: !allAnswered ? 0.3 : 1, cursor: !allAnswered ? "not-allowed" : "pointer" }}
         >
-          {round >= 2 ? "Continue to Rescripting" : "Submit & Next"}
+          {round >= 2 ? "Rescript" : "Continue"}
           <Icon name="arrowright" />
         </button>
       </div>

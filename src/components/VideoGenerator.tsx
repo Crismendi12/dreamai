@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import DreamPlayer from "./DreamPlayer";
 import { Icon } from "@/lib/icons";
+import { apiFetch } from "@/lib/api";
 
 interface Scene {
   scene_number: number;
@@ -47,7 +48,7 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
   useEffect(() => {
     const generate = async () => {
       try {
-        const res = await fetch("/api/generate-scenes", {
+        const res = await apiFetch("/api/generate-scenes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ scenes, endingType }),
@@ -171,9 +172,12 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
   // Done -- sort scenes and show player
   const sortedScenes = [...completedScenes].sort((a, b) => a.scene_number - b.scene_number);
   const totalDuration = sortedScenes.reduce((sum, s) => sum + s.duration_seconds, 0);
-  const hasVideos = sortedScenes.some((s) => s.video_url);
 
-  if (!hasVideos) {
+  // Show the player whenever scenes came back — DreamPlayer renders real video when
+  // a scene has a video_url, or an on-brand calm placeholder (gradient + narration)
+  // when it doesn't yet. Only show the error state on a real generation error or
+  // when nothing came back at all.
+  if (generationError || sortedScenes.length === 0) {
     return (
       <div className="panel animate-fade-in" style={{ maxWidth: "440px", textAlign: "center" }}>
         {generationError ? (

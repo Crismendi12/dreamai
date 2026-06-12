@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Icon, type IconName } from "@/lib/icons";
+import { apiFetch } from "@/lib/api";
 
 interface Scene {
   scene_number: number;
@@ -78,7 +79,7 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
 
   async function fetchRescripts() {
     try {
-      const res = await fetch("/api/rescript", {
+      const res = await apiFetch("/api/rescript", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ analysis, followUpAnswers }),

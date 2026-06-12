@@ -9,6 +9,7 @@ import VideoGenerator from "@/components/VideoGenerator";
 import HabitTracker from "@/components/HabitTracker";
 import TransformationView from "@/components/TransformationView";
 import { Icon, type IconName } from "@/lib/icons";
+import { apiFetch } from "@/lib/api";
 
 type Step = "landing" | "record" | "analyzing" | "diary" | "followup" | "rescript" | "video" | "tracker" | "transformation";
 
@@ -45,7 +46,7 @@ export default function Home() {
     setError(null);
 
     try {
-      const res = await fetch("/api/analyze", {
+      const res = await apiFetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript: text }),
@@ -158,7 +159,7 @@ export default function Home() {
           <div className="flex flex-col items-center gap-8 w-full">
             <DreamDiary analysis={analysis as Record<string, unknown>} />
             <button onClick={() => setStep("followup")} className="btn btn--brand">
-              Continue — Let&apos;s Go Deeper
+              Let&apos;s Go Deeper
               <Icon name="arrowright" size={18} />
             </button>
           </div>
@@ -200,6 +201,7 @@ export default function Home() {
       <footer className="px-6 py-4 text-center" style={{ borderTop: "1px solid var(--line)" }}>
         <p style={{ fontSize: 12, color: "var(--faint)", lineHeight: 1.5 }}>
           DreamAI uses AI-powered Image Rehearsal Therapy (IRT) to help transform nightmares.
+          {" "}In collaboration with Dr. Michael Breus, PhD.
           {" "}Not a substitute for professional mental health care.
         </p>
       </footer>
@@ -253,12 +255,6 @@ function LandingView({ onStart }: { onStart: () => void }) {
         <span><b>90%</b> maintain at 6 months</span><span className="dot" />
         <span className="verified"><Icon name="check" size={13} /> Clinically grounded</span>
       </div>
-
-      {/* Citation */}
-      <p style={{ fontSize: 11, color: "var(--faint)", maxWidth: "32rem", lineHeight: 1.5, marginTop: 6 }}>
-        Based on Image Rehearsal Therapy protocols validated by Krakow &amp; Zadra (2006) and Aurora et al. (2010).
-        In collaboration with Dr. Michael Breus, PhD — The Sleep Doctor.
-      </p>
     </div>
   );
 }
