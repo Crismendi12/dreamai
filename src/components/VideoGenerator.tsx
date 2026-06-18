@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import DreamPlayer from "./DreamPlayer";
+import { Icon } from "@/lib/icons";
+import { apiFetch } from "@/lib/api";
 
 interface Scene {
   scene_number: number;
@@ -14,6 +16,7 @@ interface Scene {
 interface GeneratedScene {
   scene_number: number;
   video_url: string | null;
+  image_url: string | null;
   narration: string;
   duration_seconds: number;
   mood: string;
@@ -33,6 +36,15 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
   const [completedScenes, setCompletedScenes] = useState<GeneratedScene[]>([]);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  // renderedCount = how many scenes have finished "rendering"; the scene at index
+  // === renderedCount is the one currently rendering. dataReady = the generate()
+  // call has returned. We gate the player on the animation having stepped through
+  // EVERY scene, so it never gets cut off when generation resolves quickly.
+  const [renderedCount, setRenderedCount] = useState(0);
+  const [dataReady, setDataReady] = useState(false);
+
+  const totalScenes = scenes.length;
+  const STEP_MS = 2000;
 
   // Timer for user feedback
   useEffect(() => {
@@ -41,11 +53,12 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
     return () => clearInterval(timer);
   }, [phase]);
 
-  // Single API call that blocks until all videos are ready
+  // Single API call that blocks until all videos are ready. Mark dataReady when it
+  // returns (don't reveal the player yet — the animation gate below does that).
   useEffect(() => {
     const generate = async () => {
       try {
-        const res = await fetch("/api/generate-scenes", {
+        const res = await apiFetch("/api/generate-scenes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ scenes, endingType }),
@@ -64,12 +77,34 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
       } catch {
         setGenerationError("Connection error -- please check your internet and try again");
       }
-      setPhase("done");
+      setDataReady(true);
     };
     generate();
   }, [scenes, endingType]);
 
-  const totalScenes = scenes.length;
+  // Step through each scene one at a time, holding the LAST one as "rendering"
+  // until generation returns. This guarantees every scene animates through.
+  useEffect(() => {
+    if (phase !== "generating") return;
+    if (renderedCount >= totalScenes - 1) return; // hold the last scene rendering
+    const t = setTimeout(() => setRenderedCount((c) => c + 1), STEP_MS);
+    return () => clearTimeout(t);
+  }, [phase, renderedCount, totalScenes]);
+
+  // Finish: once data is ready AND the animation reached the last scene, mark it
+  // rendered and reveal the player after a calm beat. Errors short-circuit.
+  useEffect(() => {
+    if (phase !== "generating" || !dataReady) return;
+    if (generationError) {
+      const t = setTimeout(() => setPhase("done"), 300);
+      return () => clearTimeout(t);
+    }
+    if (renderedCount < totalScenes - 1) return; // wait for the walk-through to finish
+    const t1 = setTimeout(() => setRenderedCount(totalScenes), 450);
+    const t2 = setTimeout(() => setPhase("done"), 1150);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [phase, dataReady, generationError, renderedCount, totalScenes]);
+
   const minutes = Math.floor(elapsed / 60);
   const seconds = elapsed % 60;
   const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
@@ -77,50 +112,89 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
   // Generating phase -- show cinematic loading
   if (phase === "generating") {
     return (
-      <div className="w-full max-w-2xl space-y-8 animate-fade-in">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
-            Creating Your Dream Film
-          </h2>
-          <p className="text-[var(--text-secondary)] text-sm">
-            AI is generating {totalScenes} cinematic POV scenes with Kling 2.6
-          </p>
+      <div className="analysing animate-fade-in">
+        {/* Morphing orb hero */}
+        <div className="orb-stage">
+          <div className="orb-glow" />
+          <div className="orb" />
+          <div className="spark s1"><Icon name="spark" /></div>
+          <div className="spark s2"><Icon name="spark" /></div>
+          <div className="spark s3"><Icon name="spark" /></div>
         </div>
 
-        {/* Animated progress */}
-        <div className="space-y-3">
-          <div className="w-full h-2 bg-[var(--bg-card)] rounded-full overflow-hidden">
+        <h2 className="analyse-head">Creating Your Dream Film</h2>
+        <p className="subhead" style={{ marginTop: "-14px", marginBottom: "20px" }}>
+          AI is generating {totalScenes} cinematic POV scenes with Kling 2.6
+        </p>
+
+        {/* Decorative indeterminate progress track (fixed 60%, not real progress) */}
+        <div style={{ width: "100%", maxWidth: "360px" }}>
+          <div
+            style={{
+              width: "100%",
+              height: "3px",
+              borderRadius: "999px",
+              background: "var(--line)",
+              overflow: "hidden",
+            }}
+          >
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] animate-pulse"
-              style={{ width: "60%" }}
+              className="animate-pulse"
+              style={{
+                width: "60%",
+                height: "100%",
+                borderRadius: "999px",
+                background: "linear-gradient(90deg, var(--accent), var(--accent-l))",
+              }}
             />
           </div>
-          <p className="text-xs text-[var(--text-muted)] text-center">
+          <p
+            style={{
+              fontFamily: "var(--font-mono), var(--mono)",
+              fontSize: "12px",
+              color: "var(--faint)",
+              textAlign: "center",
+              marginTop: "10px",
+            }}
+          >
             Rendering scenes... {timeStr} elapsed
           </p>
         </div>
 
-        {/* Scene cards */}
-        <div className="grid grid-cols-2 gap-3">
-          {scenes.map((s, i) => (
-            <div key={i} className="glass rounded-xl p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-[var(--text-muted)]">
-                  Scene {s.scene_number || i + 1}
+        {/* Per-scene status list — same smooth opacity-fade pattern as the
+            analyzing screen (.live-steps / .live-row .on/.done) so states cross-
+            fade instead of popping. Driven by activeIdx. */}
+        <div className="live-steps" style={{ marginTop: "8px" }}>
+          {scenes.map((s, i) => {
+            const done = i < renderedCount;
+            const rendering = i === renderedCount;
+            const status = done ? "Rendered" : rendering ? "Rendering" : "Queued";
+            return (
+              <div key={i} className={`live-row ${done ? "done" : ""} ${rendering ? "on" : ""}`}>
+                <span className="live-ic">
+                  {done ? (
+                    <Icon name="check" size={14} />
+                  ) : rendering ? (
+                    <span className="live-spin" />
+                  ) : (
+                    <Icon name="play" size={14} />
+                  )}
                 </span>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
-                  <span className="text-xs text-[var(--accent)]">Rendering</span>
-                </div>
+                <span className="live-t">Scene {s.scene_number || i + 1} — {status}</span>
               </div>
-              <p className="text-xs text-[var(--text-secondary)] line-clamp-2">
-                {s.visual_description}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        <p className="text-xs text-[var(--text-muted)] text-center italic">
+        <p
+          style={{
+            fontSize: "12.5px",
+            color: "var(--faint)",
+            textAlign: "center",
+            fontStyle: "italic",
+            marginTop: "18px",
+          }}
+        >
           Each scene takes ~2 minutes to render. All {totalScenes} generate in parallel.
         </p>
       </div>
@@ -130,50 +204,59 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
   // Done -- sort scenes and show player
   const sortedScenes = [...completedScenes].sort((a, b) => a.scene_number - b.scene_number);
   const totalDuration = sortedScenes.reduce((sum, s) => sum + s.duration_seconds, 0);
-  const hasVideos = sortedScenes.some((s) => s.video_url);
 
-  if (!hasVideos) {
+  // Show the player whenever scenes came back — DreamPlayer renders real video when
+  // a scene has a video_url, or an on-brand calm placeholder (gradient + narration)
+  // when it doesn't yet. Only show the error state on a real generation error or
+  // when nothing came back at all.
+  if (generationError || sortedScenes.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-6 animate-fade-in max-w-md text-center">
+      <div className="panel animate-fade-in" style={{ maxWidth: "440px", textAlign: "center" }}>
         {generationError ? (
-          <>
-            <div className="w-14 h-14 rounded-full bg-[var(--danger)]/10 flex items-center justify-center">
-              <svg className="w-7 h-7 text-[var(--danger)]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "18px" }}>
+            <div
+              style={{
+                width: "56px",
+                height: "56px",
+                borderRadius: "999px",
+                background: "rgba(192,57,43,0.1)",
+                color: "var(--danger)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon name="alert" size={28} />
             </div>
-            <div className="space-y-2">
-              <p className="text-[var(--text-primary)] font-medium">Video Generation Unavailable</p>
-              <p className="text-sm text-[var(--text-secondary)]">{generationError}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <p style={{ fontWeight: 600, color: "var(--text)" }}>Video Generation Unavailable</p>
+              <p style={{ fontSize: "14px", color: "var(--muted)" }}>{generationError}</p>
             </div>
             {generationError.includes("credits") || generationError.includes("balance") || generationError.includes("billing") ? (
               <a
                 href="https://fal.ai/dashboard/billing"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors"
+                className="btn btn--brand"
               >
                 Add Credits at fal.ai
+                <Icon name="arrowright" />
               </a>
             ) : (
-              <button
-                onClick={() => window.location.reload()}
-                className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
-              >
+              <button onClick={() => window.location.reload()} className="btn btn--brand">
+                <Icon name="refresh" />
                 Retry
               </button>
             )}
-          </>
+          </div>
         ) : (
-          <>
-            <p className="text-[var(--text-secondary)]">Video generation failed. Please try again.</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
-            >
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "18px" }}>
+            <p style={{ color: "var(--muted)" }}>Video generation failed. Please try again.</p>
+            <button onClick={() => window.location.reload()} className="btn btn--brand">
+              <Icon name="refresh" />
               Retry
             </button>
-          </>
+          </div>
         )}
       </div>
     );
@@ -182,16 +265,14 @@ export default function VideoGenerator({ scenes, endingType, endingTitle, onComp
   return (
     <div className="space-y-6">
       <DreamPlayer
-        scenes={sortedScenes}
+        scenes={sortedScenes.map((s) => ({ ...s, image_url: null }))}
         totalDuration={totalDuration}
         endingTitle={endingTitle}
       />
       <div className="flex justify-center">
-        <button
-          onClick={onComplete}
-          className="px-8 py-3 rounded-xl btn-primary cursor-pointer"
-        >
+        <button onClick={onComplete} className="btn btn--brand">
           Continue to Your Healing Plan
+          <Icon name="arrowright" />
         </button>
       </div>
     </div>

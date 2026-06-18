@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Icon, type IconName } from "@/lib/icons";
+import { apiFetch } from "@/lib/api";
 
 interface Scene {
   scene_number: number;
@@ -75,13 +77,9 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
   const [selectedEnding, setSelectedEnding] = useState<number | null>(null);
   const [activeScene, setActiveScene] = useState(0);
 
-  useEffect(() => {
-    fetchRescripts();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fetchRescripts = async () => {
+  async function fetchRescripts() {
     try {
-      const res = await fetch("/api/rescript", {
+      const res = await apiFetch("/api/rescript", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ analysis, followUpAnswers }),
@@ -98,26 +96,38 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
       setData({ endings: [] });
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    // fetchRescripts is async: every setState runs after `await`/in catch, never
+    // synchronously within the effect body, so the cascading-render concern does
+    // not apply here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchRescripts();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center gap-4 animate-fade-in">
-        <div className="w-10 h-10 border-2 border-[var(--accent-warm)] border-t-transparent rounded-full animate-spin" />
-        <p className="text-[var(--text-secondary)] text-sm">Creating new endings for your dream...</p>
-        <p className="text-[var(--text-muted)] text-xs">This is where the healing begins</p>
+      <div className="analysing animate-fade-in">
+        <div className="orb-stage">
+          <div className="orb-glow" />
+          <div className="orb" />
+          <span className="spark s1"><Icon name="spark" /></span>
+          <span className="spark s2"><Icon name="spark" /></span>
+          <span className="spark s3"><Icon name="spark" /></span>
+        </div>
+        <p className="text-[var(--muted)] text-sm">Creating new endings for your dream...</p>
+        <p className="text-[var(--faint)] text-xs mt-1">This is where the healing begins</p>
       </div>
     );
   }
 
   if (!data?.endings || data.endings.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 animate-fade-in">
-        <p className="text-[var(--text-secondary)]">Could not generate endings.</p>
-        <button
-          onClick={() => { setLoading(true); fetchRescripts(); }}
-          className="px-6 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
-        >
+      <div className="panel flex flex-col items-center gap-4 text-center animate-fade-in">
+        <p className="text-[var(--muted)]">Could not generate endings.</p>
+        <button onClick={() => { setLoading(true); fetchRescripts(); }} className="btn btn--brand">
+          <Icon name="refresh" />
           Try Again
         </button>
       </div>
@@ -125,52 +135,50 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
   }
 
   const labels = ["Mastery", "Transformation", "Safety"];
-  const icons = ["⚡", "🦋", "🏡"];
-  const colors = ["var(--accent)", "var(--accent-warm)", "var(--success)"];
+  const iconNames: IconName[] = ["zap", "heart", "shieldcheck"];
+  const colors = ["#1E3A8A", "#172554", "#3B82F6"];
 
   const ending = selectedEnding !== null ? data.endings[selectedEnding] : null;
 
   return (
     <div className="w-full max-w-2xl space-y-6 animate-slide-up">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
+        <h2 className="text-3xl font-display text-[var(--text)]">
           Rescript Your Dream
         </h2>
-        <p className="text-[var(--text-secondary)] text-sm">
+        <p className="subhead text-sm">
           Choose how you want your dream to end. Each approach is backed by IRT research.
         </p>
       </div>
 
       {/* Ending selector */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
         {data.endings.map((e, i) => (
           <button
             key={i}
             onClick={() => { setSelectedEnding(i); setActiveScene(0); }}
-            className={`relative glass rounded-xl p-4 text-left transition-all cursor-pointer ${
-              selectedEnding === i ? "ring-2 glow-border" : "hover:bg-[var(--bg-elevated)]"
-            }`}
+            className={`cat relative ${selectedEnding === i ? "glow-border" : ""}`}
             style={{
               borderColor: selectedEnding === i ? colors[i] : undefined,
             }}
           >
             {data.recommended === i + 1 && (
-              <span className="absolute -top-2 -right-2 text-[10px] bg-[var(--accent)] text-white px-2 py-0.5 rounded-full font-medium">
+              <span className="pill absolute -top-3 -right-2 !py-1 !px-2.5 text-[10px] !bg-[var(--accent)] !border-[var(--accent)] !text-white font-medium">
                 Recommended
               </span>
             )}
-            <div className="text-lg mb-2">{icons[i]}</div>
-            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
-              {labels[i]}
-            </h3>
-            <p className="text-xs text-[var(--text-muted)]">{e.title}</p>
+            <span className="cat-ic">
+              <Icon name={iconNames[i]} />
+            </span>
+            <span className="cat-name">{labels[i]}</span>
+            <span className="cat-eg">{e.title}</span>
           </button>
         ))}
       </div>
 
       {/* Recommendation reason */}
       {data.recommendation_reason && (
-        <p className="text-xs text-[var(--text-muted)] text-center italic">
+        <p className="text-xs text-[var(--faint)] text-center italic">
           {data.recommendation_reason}
         </p>
       )}
@@ -178,8 +186,8 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
       {/* Selected ending detail */}
       {ending && (
         <div className="space-y-4 animate-fade-in">
-          <div className="glass rounded-xl p-4">
-            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+          <div className="panel">
+            <p className="text-sm text-[var(--muted)] leading-relaxed">
               {ending.description}
             </p>
           </div>
@@ -187,7 +195,7 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
           {/* Scene viewer */}
           {ending.scenes && ending.scenes.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
+              <h3 className="panel-label !mb-0">
                 Scene-by-Scene Visualization
               </h3>
 
@@ -197,10 +205,10 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
                   <button
                     key={i}
                     onClick={() => setActiveScene(i)}
-                    className={`w-8 h-8 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                    className={`w-8 h-8 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer border ${
                       activeScene === i
-                        ? "bg-[var(--accent)] text-white"
-                        : "bg-[var(--bg-card)] text-[var(--text-muted)] hover:bg-[var(--bg-elevated)]"
+                        ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                        : "bg-[var(--bg-2)] text-[var(--faint)] border-[var(--line)] hover:bg-[var(--bg-2-h)]"
                     }`}
                   >
                     {i + 1}
@@ -209,31 +217,31 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
               </div>
 
               {/* Active scene */}
-              <div className="glass rounded-xl p-5 space-y-4 animate-fade-in" key={activeScene}>
+              <div className="panel space-y-4 animate-fade-in" key={activeScene}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-[var(--accent)] uppercase tracking-wider">
+                  <span className="font-mono text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">
                     Scene {ending.scenes[activeScene].scene_number || activeScene + 1}
                   </span>
-                  <span className="text-xs text-[var(--text-muted)]">
+                  <span className="font-mono text-xs text-[var(--faint)]">
                     {ending.scenes[activeScene].duration_seconds}s
                     {ending.scenes[activeScene].mood && ` · ${ending.scenes[activeScene].mood}`}
                   </span>
                 </div>
 
-                <div className="bg-[var(--bg-deep)] rounded-lg p-4 border-l-2 border-[var(--accent-warm)]">
-                  <span className="text-[10px] font-medium text-[var(--accent-warm)] uppercase tracking-wider block mb-2">
+                <div className="pl-4 border-l-2 border-[var(--accent-l)]">
+                  <span className="panel-label !mb-2 block">
                     Visual
                   </span>
-                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                  <p className="text-sm text-[var(--muted)] leading-relaxed">
                     {ending.scenes[activeScene].visual_description}
                   </p>
                 </div>
 
-                <div className="bg-[var(--bg-deep)] rounded-lg p-4 border-l-2 border-[var(--accent)]">
-                  <span className="text-[10px] font-medium text-[var(--accent)] uppercase tracking-wider block mb-2">
+                <div className="pl-4 border-l-2 border-[var(--accent)]">
+                  <span className="panel-label !mb-2 block !text-[var(--accent)]">
                     Narration
                   </span>
-                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed italic">
+                  <p className="text-sm text-[var(--text)] leading-relaxed italic font-display">
                     &ldquo;{ending.scenes[activeScene].narration}&rdquo;
                   </p>
                 </div>
@@ -244,16 +252,18 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
                 <button
                   onClick={() => setActiveScene(Math.max(0, activeScene - 1))}
                   disabled={activeScene === 0}
-                  className="text-sm text-[var(--accent)] disabled:text-[var(--text-muted)] disabled:cursor-not-allowed cursor-pointer"
+                  className="linklike disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
                 >
+                  <Icon name="arrowleft" />
                   Previous
                 </button>
                 <button
                   onClick={() => setActiveScene(Math.min(ending.scenes.length - 1, activeScene + 1))}
                   disabled={activeScene === ending.scenes.length - 1}
-                  className="text-sm text-[var(--accent)] disabled:text-[var(--text-muted)] disabled:cursor-not-allowed cursor-pointer"
+                  className="linklike disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
                 >
                   Next
+                  <Icon name="arrowright" />
                 </button>
               </div>
             </div>
@@ -263,15 +273,19 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
 
       {/* Generate Video CTA */}
       {ending && (
-        <div className="glass rounded-xl p-6 text-center space-y-3">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+        <div className="outcome">
+          <div className="outcome-label">
+            <Icon name="play" />
             Generate Your Rehearsal Film
-          </h3>
-          <p className="text-sm text-[var(--text-secondary)]">
+          </div>
+          <div className="outcome-fig">
+            <span className="font-display text-2xl leading-tight">{ending.title}</span>
+          </div>
+          <p className="outcome-sub mt-2">
             AI will create a cinematic POV video of your new ending -- {ending.scenes.length} scenes
             with dreamlike camera movement and narration.
           </p>
-          <div className="pt-2">
+          <div className="pt-5">
             <button
               onClick={() => {
                 if (selectedEnding === null) return;
@@ -282,9 +296,10 @@ export default function RescriptingView({ analysis, followUpAnswers, onGenerateV
                   scenes: ending.scenes,
                 });
               }}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl btn-primary cursor-pointer"
+              className="btn btn--ghost"
             >
               Generate Rehearsal Film
+              <Icon name="arrowright" />
             </button>
           </div>
         </div>

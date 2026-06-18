@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Icon } from "@/lib/icons";
 
 interface GeneratedScene {
   scene_number: number;
@@ -154,11 +155,11 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
   }, []);
 
   const moodGradients: Record<string, string> = {
-    empowering: "from-amber-900/60 to-yellow-600/20",
-    calm: "from-blue-900/60 to-slate-800/20",
-    warm: "from-orange-900/60 to-amber-700/20",
-    peaceful: "from-indigo-900/60 to-blue-800/20",
-    hopeful: "from-rose-900/50 to-amber-600/20",
+    empowering: "from-[#1E2A4A] to-[#0E1526]",
+    calm: "from-[#16203A] to-[#0E1526]",
+    warm: "from-[#1F2746] to-[#0E1526]",
+    peaceful: "from-[#192340] to-[#0E1526]",
+    hopeful: "from-[#24315A] to-[#0E1526]",
   };
 
   return (
@@ -171,16 +172,17 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
         }
       `}</style>
       <div className="text-center space-y-1 mb-2">
-        <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
+        <h2 className="serif-hero text-[var(--text)]" style={{ fontSize: "clamp(26px, 5vw, 34px)" }}>
           Your Rehearsal Experience
         </h2>
-        <p className="text-[var(--text-secondary)] text-sm">
-          {endingTitle} -- Watch with earbuds for best experience
+        <p className="subhead">
+          {endingTitle} · Watch with earbuds for best experience
         </p>
       </div>
 
-      {/* Cinematic Player */}
-      <div className="relative rounded-2xl overflow-hidden bg-black aspect-video group shadow-2xl shadow-black/50">
+      {/* Cinematic Player — light frame around a dark video stage */}
+      <div className="rounded-[20px] bg-[var(--bg-2)] border border-[var(--line)] p-2 shadow-[0_12px_30px_-24px_rgba(26,26,24,0.4)]">
+      <div className="relative rounded-2xl overflow-hidden bg-[#1A1A18] aspect-video group">
         {/* Main video/visual */}
         <div
           className={`absolute inset-0 transition-opacity duration-700 ${transitioning ? "opacity-0" : "opacity-100"}`}
@@ -267,11 +269,9 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
 
         {/* HD Video badge */}
         {scene.video_url && (
-          <div className="absolute top-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-            <span
-              className="text-emerald-400/80 text-xs font-medium"
-              style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
-            >
+          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] text-white text-[11px] font-semibold px-2.5 py-1 shadow-[0_2px_8px_rgba(30,58,138,0.4)]">
+              <Icon name="spark" size={11} />
               AI Video
             </span>
           </div>
@@ -279,9 +279,14 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
 
         {/* End card */}
         {showEndCard && (
-          <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-4 animate-fade-in">
-            <p className="text-white/80 text-lg font-light">Session Complete</p>
-            <p className="text-white/50 text-sm max-w-sm text-center">
+          <div className="absolute inset-0 bg-[var(--bg-2)]/95 backdrop-blur-sm flex flex-col items-center justify-center gap-4 px-8 animate-fade-in">
+            <div className="w-14 h-14 rounded-full bg-[var(--green-soft)] text-[var(--green)] flex items-center justify-center">
+              <Icon name="check" size={26} />
+            </div>
+            <p className="serif-hero text-[var(--text)]" style={{ fontSize: "clamp(22px, 4vw, 28px)" }}>
+              Session Complete
+            </p>
+            <p className="text-[var(--muted)] text-sm max-w-sm text-center leading-relaxed">
               Watch again tomorrow night before sleep. Repetition rewires your dream patterns.
             </p>
             <button
@@ -292,8 +297,9 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
                 elapsedRef.current = 0;
                 play();
               }}
-              className="mt-2 px-6 py-2.5 rounded-full bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors cursor-pointer border border-white/10"
+              className="btn btn--ghost mt-2"
             >
+              <Icon name="refresh" size={18} />
               Watch Again
             </button>
           </div>
@@ -303,30 +309,26 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
         {!showEndCard && (
           <button
             onClick={isPlaying ? pause : play}
-            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            className="absolute inset-0 flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
           >
-            <div className="w-16 h-16 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/10">
+            <div className="w-16 h-16 rounded-full bg-[var(--accent)]/90 backdrop-blur-sm flex items-center justify-center text-white shadow-[0_8px_24px_rgba(30,58,138,0.45)]">
               {isPlaying ? (
-                <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="4" width="4" height="16" rx="1" />
-                  <rect x="14" y="4" width="4" height="16" rx="1" />
-                </svg>
+                <Icon name="pause" size={26} />
               ) : (
-                <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <Icon name="play" size={26} className="ml-0.5" />
               )}
             </div>
           </button>
         )}
       </div>
+      </div>
 
       {/* Timeline */}
       <div className="space-y-3">
         {/* Progress bar */}
-        <div className="relative w-full h-1 bg-white/5 rounded-full overflow-hidden cursor-pointer group/bar">
+        <div className="relative w-full h-1.5 bg-[var(--line)] rounded-full overflow-hidden cursor-pointer group/bar">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] transition-all duration-200"
+            className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-d)] transition-all duration-200"
             style={{ width: `${progress}%` }}
           />
           {/* Scene markers */}
@@ -336,7 +338,7 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
             return (
               <div
                 key={i}
-                className="absolute top-0 h-full w-px bg-white/20"
+                className="absolute top-0 h-full w-px bg-[var(--accent-l)]"
                 style={{ left: `${markerPos}%` }}
               />
             );
@@ -349,49 +351,40 @@ export default function DreamPlayer({ scenes, totalDuration, endingTitle }: Drea
             <button
               onClick={() => goToScene(Math.max(0, currentScene - 1))}
               disabled={currentScene === 0}
-              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="w-11 h-11 flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-25 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-              </svg>
+              <Icon name="arrowleft" size={18} />
             </button>
 
             <button
               onClick={isPlaying ? pause : play}
-              className="w-10 h-10 rounded-full bg-[var(--accent)] text-white flex items-center justify-center hover:bg-[var(--accent)]/90 transition-colors cursor-pointer"
+              className="w-11 h-11 rounded-full bg-[var(--accent)] text-white flex items-center justify-center hover:bg-[var(--accent-d)] transition-colors cursor-pointer shadow-[0_6px_18px_-8px_rgba(30,58,138,0.7)]"
             >
               {isPlaying ? (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="4" width="4" height="16" rx="1" />
-                  <rect x="14" y="4" width="4" height="16" rx="1" />
-                </svg>
+                <Icon name="pause" size={18} />
               ) : (
-                <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <Icon name="play" size={18} className="ml-0.5" />
               )}
             </button>
 
             <button
               onClick={() => goToScene(Math.min(scenes.length - 1, currentScene + 1))}
               disabled={currentScene === scenes.length - 1}
-              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="w-11 h-11 flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-25 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
+              <Icon name="arrowright" size={18} />
             </button>
           </div>
 
-          <span className="text-xs text-[var(--text-muted)] font-mono">
+          <span className="text-xs text-[var(--faint)] font-mono">
             Scene {currentScene + 1} of {scenes.length}
           </span>
         </div>
       </div>
 
       {/* Instructions */}
-      <div className="glass rounded-xl p-4 text-center">
-        <p className="text-xs text-[var(--text-muted)]">
+      <div className="panel text-center">
+        <p className="text-xs text-[var(--muted)] leading-relaxed">
           Watch this experience each night before sleep with earbuds. Focus on the imagery and narration.
           Over 7-10 days, your brain will integrate this new ending into your dream patterns.
         </p>

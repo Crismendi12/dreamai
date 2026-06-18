@@ -1,53 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Icon, type IconName } from "@/lib/icons";
+import { STORAGE_KEY, TOTAL_DAYS, getStoredData, getDayNumber, type TrackerData } from "@/lib/tracker";
 
 interface HabitTrackerProps {
   onComplete: () => void;
+  onOpenJournal: () => void;
 }
 
-const TOTAL_DAYS = 10;
-const STORAGE_KEY = "dreamai-habit-tracker";
-
-interface TrackerData {
-  startDate: string;
-  completedDays: number[];
-  streak: number;
-}
-
-function getStoredData(): TrackerData {
-  if (typeof window === "undefined") return { startDate: "", completedDays: [], streak: 0 };
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      // ignore
-    }
-  }
-  const data: TrackerData = {
-    startDate: new Date().toISOString().split("T")[0],
-    completedDays: [],
-    streak: 0,
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  return data;
-}
-
-function getDayNumber(startDate: string): number {
-  const start = new Date(startDate);
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-  return Math.min(diff + 1, TOTAL_DAYS);
-}
-
-export default function HabitTracker({ onComplete }: HabitTrackerProps) {
+export default function HabitTracker({ onComplete, onOpenJournal }: HabitTrackerProps) {
   const [data, setData] = useState<TrackerData>({ startDate: "", completedDays: [], streak: 0 });
   const [todayDay, setTodayDay] = useState(1);
   const [justCompleted, setJustCompleted] = useState(false);
 
   useEffect(() => {
     const stored = getStoredData();
+    // Mount-only hydration from localStorage; cascading-render warning does not apply here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setData(stored);
     setTodayDay(getDayNumber(stored.startDate));
   }, []);
@@ -76,51 +46,54 @@ export default function HabitTracker({ onComplete }: HabitTrackerProps) {
   const completedCount = data.completedDays.length;
   const progressPct = (completedCount / TOTAL_DAYS) * 100;
 
-  const milestones = [
-    { day: 3, label: "Neural pathways forming", icon: "~" },
-    { day: 5, label: "Dream patterns shifting", icon: "+" },
-    { day: 7, label: "Deep integration begins", icon: "*" },
-    { day: 10, label: "Transformation complete", icon: "#" },
+  const milestones: { day: number; label: string; icon: IconName }[] = [
+    { day: 3, label: "Neural pathways forming", icon: "sparkline" },
+    { day: 5, label: "Dream patterns shifting", icon: "heart" },
+    { day: 7, label: "Deep integration begins", icon: "brain" },
+    { day: 10, label: "Transformation complete", icon: "trophy" },
   ];
 
   return (
     <div className="w-full max-w-2xl space-y-6 animate-slide-up">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-display font-semibold text-[var(--text-primary)]">
+        <h2 className="serif-hero" style={{ fontSize: "clamp(28px, 5vw, 36px)" }}>
           Your 10-Day Healing Protocol
         </h2>
-        <p className="text-[var(--text-secondary)] text-sm">
+        <p className="subhead mx-auto" style={{ maxWidth: "34rem" }}>
           IRT research shows 7-10 days of nightly rehearsal rewires nightmare patterns.
           Watch your video before sleep each night.
         </p>
       </div>
 
       {/* Overall progress */}
-      <div className="glass rounded-xl p-5 space-y-3">
+      <div className="panel space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-[var(--text-primary)]">
+          <span className="text-sm font-semibold text-[var(--text)]">
             Progress
           </span>
-          <span className="text-sm text-[var(--accent)] font-medium">
+          <span className="text-sm text-[var(--accent)] font-semibold">
             {completedCount} / {TOTAL_DAYS} nights
           </span>
         </div>
-        <div className="w-full h-3 bg-[var(--bg-deep)] rounded-full overflow-hidden">
+        <div className="w-full h-2.5 rounded-full overflow-hidden bg-[var(--line)]">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--accent-warm)] transition-all duration-700"
+            className="h-full rounded-full bg-[var(--accent)] transition-all duration-700"
             style={{ width: `${progressPct}%` }}
           />
         </div>
         {data.streak > 1 && (
-          <p className="text-xs text-[var(--accent-warm)] text-center font-medium">
-            {data.streak}-night streak -- keep going!
-          </p>
+          <div className="flex justify-center">
+            <span className="pill">
+              <Icon name="spark" />
+              <b>{data.streak}-night streak -- keep going!</b>
+            </span>
+          </div>
         )}
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-5 gap-2 sm:gap-3">
         {Array.from({ length: TOTAL_DAYS }, (_, i) => i + 1).map((day) => {
           const isCompleted = data.completedDays.includes(day);
           const isToday = day === todayDay;
@@ -130,42 +103,40 @@ export default function HabitTracker({ onComplete }: HabitTrackerProps) {
           return (
             <div
               key={day}
-              className={`relative rounded-xl p-3 text-center transition-all ${
+              className={`relative rounded-xl p-2 sm:p-3 text-center transition-all border ${
                 isCompleted
-                  ? "bg-[var(--accent)]/20 border border-[var(--accent)]/30"
+                  ? "bg-[var(--green-soft)] border-[var(--green)]/30"
                   : isToday
-                  ? "glass border border-[var(--accent-warm)]/40 glow-border"
+                  ? "bg-[var(--bg-2)] glow-border"
                   : isFuture
-                  ? "bg-[var(--bg-card)]/50 border border-[var(--border)]"
-                  : "bg-[var(--bg-card)] border border-[var(--border)]"
+                  ? "bg-[var(--bg-2)] border-[var(--line)] opacity-60"
+                  : "bg-[var(--bg-2)] border-[var(--line)]"
               }`}
             >
-              <div className="text-xs text-[var(--text-muted)] mb-1">Day</div>
+              <div className="text-[10px] uppercase tracking-wider font-mono text-[var(--faint)] mb-1">Day</div>
               <div
-                className={`text-lg font-bold ${
+                className={`text-lg font-bold flex items-center justify-center ${
                   isCompleted
-                    ? "text-[var(--accent)]"
+                    ? "text-[var(--green)]"
                     : isToday
-                    ? "text-[var(--accent-warm)]"
+                    ? "text-[var(--accent)]"
                     : isFuture
-                    ? "text-[var(--text-muted)]/50"
-                    : "text-[var(--text-muted)]"
+                    ? "text-[var(--faint)]/60"
+                    : "text-[var(--muted)]"
                 }`}
               >
                 {isCompleted ? (
-                  <svg className="w-6 h-6 mx-auto text-[var(--success)]" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
+                  <Icon name="check" size={22} className="text-[var(--green)]" />
                 ) : (
                   day
                 )}
               </div>
               {isToday && !isCompleted && (
-                <div className="text-[10px] text-[var(--accent-warm)] mt-1 font-medium">Tonight</div>
+                <div className="text-[10px] text-[var(--accent)] mt-1 font-semibold">Tonight</div>
               )}
               {milestone && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--accent-warm)] flex items-center justify-center">
-                  <span className="text-[8px] text-white font-bold">{milestone.icon}</span>
+                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-sm">
+                  <Icon name={milestone.icon} size={11} className="text-white" />
                 </div>
               )}
             </div>
@@ -174,99 +145,111 @@ export default function HabitTracker({ onComplete }: HabitTrackerProps) {
       </div>
 
       {/* Milestones */}
-      <div className="space-y-2">
-        {milestones.map((m) => {
-          const reached = data.completedDays.length >= m.day;
-          return (
-            <div
-              key={m.day}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all ${
-                reached ? "bg-[var(--accent)]/10" : "bg-[var(--bg-card)]/50"
-              }`}
-            >
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                  reached
-                    ? "bg-[var(--accent)] text-white"
-                    : "bg-[var(--bg-elevated)] text-[var(--text-muted)]"
-                }`}
-              >
-                {reached ? (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                  </svg>
-                ) : (
-                  m.day
-                )}
+      <div className="panel">
+        <div className="panel-label">Milestones</div>
+        <div className="plan-steps">
+          {milestones.map((m) => {
+            const reached = data.completedDays.length >= m.day;
+            return (
+              <div key={m.day} className="plan-row">
+                <div
+                  className="plan-ic"
+                  style={
+                    reached
+                      ? { background: "var(--green-soft)", color: "var(--green)" }
+                      : undefined
+                  }
+                >
+                  {reached ? (
+                    <Icon name="check" size={16} />
+                  ) : (
+                    <span className="font-mono text-sm font-bold">{m.day}</span>
+                  )}
+                </div>
+                <div>
+                  <div
+                    className="plan-t"
+                    style={!reached ? { color: "var(--faint)" } : undefined}
+                  >
+                    Day {m.day}: {m.label}
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className={`text-sm ${reached ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>
-                  Day {m.day}: {m.label}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Today's action */}
-      <div className="glass rounded-xl p-6 text-center space-y-4">
-        {justCompleted ? (
-          <div className="space-y-3 animate-fade-in">
-            <div className="text-3xl">
-              {completedCount >= TOTAL_DAYS ? "*" : ""}
-            </div>
-            <h3 className="text-lg font-semibold text-[var(--success)]">
-              {completedCount >= TOTAL_DAYS
-                ? "Protocol Complete!"
-                : `Night ${completedCount} Complete`}
-            </h3>
-            <p className="text-sm text-[var(--text-secondary)]">
-              {completedCount >= TOTAL_DAYS
-                ? "You've completed the full 10-day protocol. Your dream patterns have been rewired."
-                : completedCount >= 7
-                ? "Deep neural integration is happening. Your dreams are shifting."
-                : completedCount >= 5
-                ? "You're past the halfway point. Your brain is forming new dream patterns."
-                : completedCount >= 3
-                ? "New neural pathways are forming. Keep building this momentum."
-                : "Great start. Consistency is the key to rewiring your dreams."}
-            </p>
+      {justCompleted ? (
+        <div className="outcome animate-fade-in text-center">
+          <div className="outcome-label justify-center">
+            <Icon name={completedCount >= TOTAL_DAYS ? "trophy" : "moon"} />
+            {completedCount >= TOTAL_DAYS ? "Protocol Complete!" : `Night ${completedCount} Complete`}
+          </div>
+          <p
+            className="outcome-sub justify-center mx-auto"
+            style={{ marginTop: "10px", maxWidth: "30rem" }}
+          >
+            {completedCount >= TOTAL_DAYS
+              ? "You've completed the full 10-day protocol. Your dream patterns have been rewired."
+              : completedCount >= 7
+              ? "Deep neural integration is happening. Your dreams are shifting."
+              : completedCount >= 5
+              ? "You're past the halfway point. Your brain is forming new dream patterns."
+              : completedCount >= 3
+              ? "New neural pathways are forming. Keep building this momentum."
+              : "Great start. Consistency is the key to rewiring your dreams."}
+          </p>
+          <div
+            className="flex flex-col items-center gap-2.5 mt-5"
+            style={{ position: "relative", zIndex: 1 }}
+          >
+            <button onClick={onOpenJournal} className="btn btn--ghost">
+              <Icon name="bookOpen" />
+              Take me to my journal
+            </button>
             {completedCount >= TOTAL_DAYS && (
-              <button
-                onClick={onComplete}
-                className="mt-2 px-8 py-3 rounded-xl btn-primary cursor-pointer"
-              >
+              <button onClick={onComplete} className="btn btn--ghost">
                 View Your Transformation
+                <Icon name="arrowright" />
               </button>
             )}
           </div>
-        ) : todayCompleted ? (
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-[var(--success)]">
-              Tonight's session is done
+        </div>
+      ) : todayCompleted ? (
+        <div className="panel text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-[var(--green)]">
+            <Icon name="shieldcheck" />
+            <h3 className="text-lg font-semibold text-[var(--green)]">
+              Tonight&apos;s session is done
             </h3>
-            <p className="text-sm text-[var(--text-secondary)]">
-              Come back tomorrow night for your next rehearsal.
-            </p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+          <p className="text-sm text-[var(--muted)]">
+            Come back tomorrow night for your next rehearsal.
+          </p>
+          <button onClick={onOpenJournal} className="btn btn--brand">
+            <Icon name="bookOpen" />
+            Take me to my journal
+          </button>
+        </div>
+      ) : (
+        <div className="panel text-center space-y-3">
+          <div className="flex items-center justify-center gap-2">
+            <Icon name="moon" className="text-[var(--accent)]" />
+            <h3 className="text-lg font-semibold text-[var(--text)]">
               Day {todayDay} -- Ready for tonight?
             </h3>
-            <p className="text-sm text-[var(--text-secondary)]">
-              After watching your rehearsal video, mark this day as complete.
-            </p>
-            <button
-              onClick={markToday}
-              className="px-8 py-3 rounded-xl btn-primary cursor-pointer"
-            >
-              Mark Tonight as Complete
-            </button>
           </div>
-        )}
-      </div>
+          <p className="text-sm text-[var(--muted)]">
+            After watching your rehearsal video, mark this day as complete.
+          </p>
+          <button onClick={markToday} className="btn btn--brand">
+            <Icon name="check" />
+            Mark Tonight as Complete
+          </button>
+        </div>
+      )}
     </div>
   );
 }
